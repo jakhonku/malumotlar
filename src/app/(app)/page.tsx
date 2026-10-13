@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FileDown } from "lucide-react";
+import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { listEvents } from "@/lib/queries";
@@ -26,15 +27,14 @@ function Stat({ label, value, tone, href, hint }: { label: string; value: number
 
 export default async function DashboardPage() {
   const profile = await requireProfile();
+  if (profile.role === "region_manager") redirect("/boshqarma");
   const supabase = await createClient();
 
-  const [{ data: statsRaw }, regionsMon, recent] = await Promise.all([
+  const [{ data: statsRaw }, recent] = await Promise.all([
     supabase.rpc("dashboard_stats"),
-    profile.role === "region_manager" ? supabase.rpc("monitoring_regions") : null,
     listEvents(supabase, { sort: "updated_at", dir: "desc", page: 1 }),
   ]);
   const s = (statsRaw ?? {}) as Stats;
-  const myRegion = regionsMon?.data?.[0] as { districts_total: number; districts_sent: number; districts_not_sent: number } | undefined;
 
   const ministry = profile.role === "super_admin" || profile.role === "observer";
   const canReport = true;
@@ -64,12 +64,6 @@ export default async function DashboardPage() {
           <>
             <Stat label="Ma’lumot yuborgan hududlar" value={`${s.regions_sent ?? 0} / ${s.regions_total ?? 0}`} tone="text-emerald-700" href="/monitoring" />
             <Stat label="Ma’lumot yubormagan hududlar" value={Math.max(0, (s.regions_total ?? 0) - (s.regions_sent ?? 0))} tone="text-red-700" href="/monitoring" />
-          </>
-        )}
-        {profile.role === "region_manager" && myRegion && (
-          <>
-            <Stat label="Ma’lumot yuborgan tumanlar" value={`${myRegion.districts_sent} / ${myRegion.districts_total}`} tone="text-emerald-700" href="/monitoring" />
-            <Stat label="Ma’lumot yubormagan tumanlar" value={myRegion.districts_not_sent} tone="text-red-700" href="/monitoring" />
           </>
         )}
         <Stat label="Tasdiqlash kutilayotgan" value={s.pending ?? 0} tone="text-blue-800" href="/approvals" />

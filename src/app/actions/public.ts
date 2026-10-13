@@ -6,6 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEventPayload, normalizeDistrictName, toFieldErrors } from "@/lib/event-payload";
 import { validateAnswers, type CollectionRow } from "@/lib/collections";
 import { BUCKET, ensureBucket, signedPath } from "@/lib/signed-files";
+import { deriveToken } from "@/lib/region-token";
+import { getProfile } from "@/lib/auth";
 import { draftSchema, submitSchema, type EventFormValues } from "@/lib/validators";
 
 export interface PublicSaveResult {
@@ -131,7 +133,15 @@ export async function savePublicEntry(
 
   const admin = createAdminClient();
   const ip = await ipHash();
-  const newToken = token ? null : randomBytes(24).toString("hex");
+  // Tizimga kirgan viloyat mas'uli o'z viloyati uchun doimiy havola oladi (qayta kirganda yozuvlari yo'qolmaydi)
+  let forced: string | null = null;
+  if (!token) {
+    const me = await getProfile();
+    if (me?.role === "region_manager" && me.region_id === geo.region_id && (geo.group_mode === "region" || geo.scope === "regional")) {
+      forced = deriveToken(col.id, me.region_id);
+    }
+  }
+  const newToken = token ? null : (forced ?? randomBytes(24).toString("hex"));
   const isNew = geo.district_id === "__new__";
 
   const { data: id, error } = await admin.rpc("col_public_save", {

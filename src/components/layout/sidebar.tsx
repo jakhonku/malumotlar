@@ -16,19 +16,20 @@ import { cn } from "@/components/ui/primitives";
 interface NavItem { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: Role[] }
 
 const ALL: Role[] = ["super_admin", "region_manager", "district_manager", "observer"];
-const MINISTRY_REGION: Role[] = ["super_admin", "region_manager", "observer"];
+const MINISTRY_REGION: Role[] = ["super_admin", "observer"];
 
 const NAV: NavItem[] = [
-  { href: "/", label: "Bosh sahifa", icon: LayoutDashboard, roles: ALL },
-  { href: "/collections", label: "Ma’lumot yig‘ish", icon: ClipboardList, roles: MINISTRY_REGION },
-  { href: "/events", label: "Barcha tadbirlar", icon: ListChecks, roles: ALL },
+  { href: "/boshqarma", label: "Boshqarma paneli", icon: LayoutDashboard, roles: ["region_manager"] },
+  { href: "/", label: "Bosh sahifa", icon: LayoutDashboard, roles: ["super_admin", "district_manager", "observer"] },
+  { href: "/collections", label: "Ma’lumot yig‘ish", icon: ClipboardList, roles: ["super_admin", "observer", "region_manager"] },
+  { href: "/events", label: "Barcha tadbirlar", icon: ListChecks, roles: ["super_admin", "district_manager", "observer"] },
   { href: "/events/regional", label: "Viloyat asosiy tadbirlari", icon: Building2, roles: MINISTRY_REGION },
   { href: "/events/district", label: "Tuman/shahar tadbirlari", icon: MapPinned, roles: MINISTRY_REGION },
   { href: "/monitoring", label: "Hududlar monitoringi", icon: Map, roles: MINISTRY_REGION },
-  { href: "/approvals", label: "Tasdiqlash markazi", icon: ClipboardCheck, roles: ["super_admin", "region_manager", "district_manager"] },
+  { href: "/approvals", label: "Tasdiqlash markazi", icon: ClipboardCheck, roles: ["super_admin", "district_manager"] },
   { href: "/artists", label: "San’atkorlar va jamoalar", icon: Mic2, roles: MINISTRY_REGION },
   { href: "/responsibles", label: "Mas’ul ijrochilar", icon: UserSquare2, roles: MINISTRY_REGION },
-  { href: "/reports", label: "Word hisobotlari", icon: FileText, roles: ALL },
+  { href: "/reports", label: "Word hisobotlari", icon: FileText, roles: ["super_admin", "district_manager", "observer"] },
   { href: "/users", label: "Foydalanuvchilar", icon: Users, roles: ["super_admin"] },
   { href: "/audit", label: "Audit jurnali", icon: History, roles: ["super_admin"] },
   { href: "/settings", label: "Sozlamalar", icon: Settings, roles: ALL },
@@ -40,7 +41,7 @@ export function Sidebar({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const items = NAV.filter((n) => n.roles.includes(role));
-  const canCreate = role !== "observer";
+  const canCreate = role !== "observer" && role !== "region_manager";
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || (href !== "/events" && pathname.startsWith(href + "/")));
 
