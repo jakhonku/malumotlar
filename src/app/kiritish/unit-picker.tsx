@@ -15,7 +15,7 @@ export function UnitPicker({
 }: { regions: Opt[]; districts: Dist[]; target?: string; audience?: "regional" | "district" | "both" }) {
   const router = useRouter();
   const [region, setRegion] = useState("");
-  const [kind, setKind] = useState<"regional" | "district">(audience === "district" ? "district" : "regional");
+  const [kind, setKind] = useState<"regional" | "district" | "region">(audience === "district" ? "district" : "regional");
   const [district, setDistrict] = useState("");
   const [name, setName] = useState("");
   const [type, setType] = useState<"tuman" | "shahar">("tuman");
@@ -26,7 +26,9 @@ export function UnitPicker({
   function go() {
     if (!region) return setError("Viloyatni tanlang");
     const p = new URLSearchParams({ region });
-    if (kind === "regional") {
+    if (kind === "region") {
+      p.set("mode", "region");
+    } else if (kind === "regional") {
       p.set("scope", "regional");
     } else {
       p.set("scope", "district");
@@ -65,6 +67,13 @@ export function UnitPicker({
           <span>
             <b className="block text-slate-900">Viloyatning o‘zi</b>
             Viloyat miqyosidagi asosiy tadbirlar (masalan, viloyat markazidagi bayram konserti).
+          </span>
+        </label>}
+        {audience !== "regional" && <label className={choice(kind === "region")}>
+          <input type="radio" name="kind" checked={kind === "region"} onChange={() => setKind("region")} className="mt-0.5 h-4 w-4 accent-blue-800" />
+          <span>
+            <b className="block text-slate-900">Viloyat boshqarmasi — hammasini men to‘ldiraman</b>
+            Boshqarma boshlig‘i viloyat va unga tegishli barcha tuman/shaharlar ma’lumotini bitta joydan, bitta havola orqali kiritadi.
           </span>
         </label>}
         {audience !== "regional" && <label className={choice(kind === "district")}>

@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { normalizePhone } from "./phone";
-import { EVENT_TYPES } from "./constants";
 
 export const FIELD_TYPES = ["text", "textarea", "number", "date", "time", "phone", "select", "multiselect", "checkbox", "rows"] as const;
 export const COLUMN_TYPES = ["text", "number", "phone", "select"] as const;
@@ -44,6 +43,8 @@ export interface FieldDef {
   options?: string[];
   /** type === "rows" bo‘lganda: har bir qatordagi kataklar */
   columns?: ColumnDef[];
+  /** type === "date": shu kalitli sanadan oldin bo‘lmasin (masalan, tugash sanasi ≥ boshlanish sanasi) */
+  notBefore?: string;
 }
 
 export type RowObj = Record<string, string | number | null>;
@@ -121,6 +122,7 @@ export const fieldDefSchema = z
     help: z.string().trim().max(300).optional(),
     options: z.array(z.string().trim().min(1).max(120)).max(100).optional(),
     columns: z.array(columnDefSchema).max(8).optional(),
+    notBefore: z.string().regex(/^[a-z0-9_]{1,40}$/).optional(),
   })
   .superRefine((f, ctx) => {
     if ((f.type === "select" || f.type === "multiselect") && (f.options?.length ?? 0) < 2) {
@@ -271,6 +273,16 @@ export function validateAnswers(
     if ("error" in r) errors[f.key] = r.error;
     else values[f.key] = r.value;
   }
+  // sanalar tartibi: «tugash sanasi boshlanishdan oldin bo‘lmasin»
+  for (const f of fields) {
+    if (f.type !== "date" || !f.notBefore || errors[f.key]) continue;
+    const other = fields.find((x) => x.key === f.notBefore);
+    const a = values[f.key];
+    const b = values[f.notBefore];
+    if (other && typeof a === "string" && typeof b === "string" && a < b) {
+      errors[f.key] = `«${f.label}» «${other.label}» dan oldin bo‘lmasin`;
+    }
+  }
   return { ok: Object.keys(errors).length === 0, values, errors };
 }
 
@@ -327,14 +339,14 @@ export function newYearTemplate(): CollectionInput {
     is_active: true,
     deadline: null,
     fields: [
-      f("Tadbir turi", "select", false, { options: [...EVENT_TYPES] }),
       f("Tadbir o‘tkaziladigan manzil", "text", true, { help: "Viloyat, tuman, ko‘cha, uy yoki mo‘ljal" }),
-      f("Tadbir o‘tkaziladigan sana", "date", true),
+      f("Tadbir boshlanish sanasi", "date", true),
+      f("Tadbir tugash sanasi", "date", true, { help: "Bir kunlik tadbirda boshlanish sanasi bilan bir xil", notBefore: "tadbir_boshlanish_sanasi" }),
       f("San’atkorlar va ijodiy jamoalar", "rows", false, {
         help: "Har bir san’atkor yoki jamoa uchun alohida qator qo‘shing",
         columns: [
           { key: "nomi", label: "F.I.Sh. yoki jamoa nomi", type: "text", required: true },
-          { key: "janri", label: "Janri", type: "text" },
+          { key: "unvoni", label: "Unvoni", type: "text" },
         ],
       }),
       f("Ishtirokchilar", "rows", false, {

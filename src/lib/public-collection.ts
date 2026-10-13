@@ -21,6 +21,8 @@ export interface EntryGroup {
   districtId: string | null;
   regionName: string;
   districtName: string | null;
+  /** region — boshqarma rejimi (bitta havola, viloyat + barcha tumanlar) */
+  groupMode: "unit" | "region";
 }
 
 /** Hudud havolasi (token) bo'yicha shu yig'ishdagi barcha yozuvlar. */
@@ -40,8 +42,15 @@ export async function getEntryGroup(collectionId: string, token: string): Promis
   return {
     entries, scope: f.scope, regionId: f.region_id, districtId: f.district_id,
     regionName: f.region?.name ?? "", districtName: f.district?.name ?? null,
+    groupMode: (f as unknown as { group_mode?: string }).group_mode === "region" ? "region" : "unit",
   };
 }
 
-export const unitLabel = (g: Pick<EntryGroup, "regionName" | "districtName" | "scope">) =>
-  g.scope === "district" && g.districtName ? `${g.regionName} · ${g.districtName}` : `${g.regionName} (viloyatning o‘zi)`;
+export const unitLabel = (g: Pick<EntryGroup, "regionName" | "districtName" | "scope" | "groupMode">) =>
+  g.groupMode === "region"
+    ? `${g.regionName} — viloyat boshqarmasi (viloyat va barcha tuman/shaharlar)`
+    : g.scope === "district" && g.districtName ? `${g.regionName} · ${g.districtName}` : `${g.regionName} (viloyatning o‘zi)`;
+
+/** Bitta yozuvning hududi (boshqarma rejimida har bir yozuv o‘z tumani bilan). */
+export const entryUnit = (e: Pick<EntryRow, "scope" | "region" | "district">) =>
+  e.scope === "district" && e.district?.name ? e.district.name : "Viloyatning o‘zi";

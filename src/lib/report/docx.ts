@@ -86,7 +86,10 @@ const sortEvents = (a: EventRow, b: EventRow) =>
   (a.address ?? "").localeCompare(b.address ?? "", "uz");
 
 function eventRow(e: EventRow, idx: number, showStatus: boolean, regionName: string, districtName: string): (string[] | string)[] {
-  const date = fmtDate(e.start_date);
+  const date =
+    e.start_date && e.end_date && e.end_date !== e.start_date
+      ? `${fmtDate(e.start_date)} — ${fmtDate(e.end_date)}`
+      : fmtDate(e.start_date);
   const artists = numbered(
     (e.artists ?? []).map((a) => {
       const extra = [ARTIST_TYPE_LABELS[a.artist_type], a.performance_type].filter(Boolean).join(", ");
@@ -120,7 +123,7 @@ function eventRow(e: EventRow, idx: number, showStatus: boolean, regionName: str
 
 const EVENT_COLS = [450, 1350, 1350, 3000, 1200, 2400, 2200, 3100];
 const EVENT_HEADERS = [
-  "№", "Viloyat/hudud", "Tuman/shahar", "Tadbir turi va o‘tkaziladigan manzil", "Sana",
+  "№", "Viloyat/hudud", "Tuman/shahar", "O‘tkaziladigan manzil", "Boshlanish – tugash sanasi",
   "San’atkorlar va ijodiy jamoalar", "Ishtirokchilar haqida ma’lumot", "Mas’ul ijrochilar (F.I.Sh., lavozimi, telefon raqami)",
 ];
 

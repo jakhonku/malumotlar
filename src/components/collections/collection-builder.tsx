@@ -20,6 +20,8 @@ interface DraftField {
   help: string;
   optionsText: string;
   columns: DraftColumn[];
+  /** boshqa maydonning uid si: shu sanadan oldin bo‘lmasin */
+  notBeforeUid: number | null;
 }
 
 interface DraftColumn {
@@ -38,10 +40,10 @@ const toDraftCol = (c: ColumnDef): DraftColumn => ({
 const blankCol = (): DraftColumn => ({ uid: uidCounter++, key: null, label: "", type: "text", required: false, optionsText: "" });
 const toDraft = (f: FieldDef): DraftField => ({
   uid: uidCounter++, key: f.key, label: f.label, type: f.type, required: f.required, help: f.help ?? "",
-  optionsText: (f.options ?? []).join("\n"), columns: (f.columns ?? []).map(toDraftCol),
+  optionsText: (f.options ?? []).join("\n"), columns: (f.columns ?? []).map(toDraftCol), notBeforeUid: null,
 });
 const blankField = (): DraftField => ({
-  uid: uidCounter++, key: null, label: "", type: "text", required: false, help: "", optionsText: "", columns: [],
+  uid: uidCounter++, key: null, label: "", type: "text", required: false, help: "", optionsText: "", columns: [], notBeforeUid: null,
 });
 
 function uniqueKey(label: string, used: Set<string>): string {
@@ -62,7 +64,14 @@ export function CollectionBuilder({ id, initial }: { id: string | null; initial:
   const [allowMultiple, setAllowMultiple] = useState(initial.allow_multiple);
   const [isActive, setIsActive] = useState(initial.is_active);
   const [deadline, setDeadline] = useState(initial.deadline ?? "");
-  const [fields, setFields] = useState<DraftField[]>(() => (initial.fields.length ? initial.fields.map(toDraft) : [blankField()]));
+  const [fields, setFields] = useState<DraftField[]>(() => {
+    if (!initial.fields.length) return [blankField()];
+    const drafts = initial.fields.map(toDraft);
+    initial.fields.forEach((f, i) => {
+      if (f.notBefore) drafts[i].notBeforeUid = drafts.find((d) => d.key === f.notBefore)?.uid ?? null;
+    });
+    return drafts;
+  });
 
   const patch = (uid: number, p: Partial<DraftField>) => setFields((fs) => fs.map((f) => (f.uid === uid ? { ...f, ...p } : f)));
   const patchCol = (uid: number, cuid: number, p: Partial<DraftColumn>) =>
@@ -78,16 +87,15 @@ export function CollectionBuilder({ id, initial }: { id: string | null; initial:
 
   function build(): CollectionInput {
     const used = new Set(fields.filter((f) => f.key).map((f) => f.key as string));
+    const keyOf = new Map<number, string>();
+    for (const f of fields) {
+      if (!f.label.trim() && !f.key) continue;
+      keyOf.set(f.uid, f.key ?? uniqueKey(f.label, used));
+    }
     const out: FieldDef[] = fields
-      .filter((f) => f.label.trim() || f.key)
+      .filter((f) => keyOf.has(f.uid))
       .map((f) => {
-        let key = f.key;
-        if (!key) {
-          const base = slugKey(f.label);
-          key = base;
-          for (let n = 2; used.has(key); n++) key = `${base}_${n}`.slice(0, 40);
-          used.add(key);
-        }
+        const key = keyOf.get(f.uid) as string;
         const options = f.type === "select" || f.type === "multiselect"
           ? f.optionsText.split("\n").map((s) => s.trim()).filter(Boolean)
           : undefined;
@@ -104,7 +112,8 @@ export function CollectionBuilder({ id, initial }: { id: string | null; initial:
               options: c.type === "select" ? c.optionsText.split("\n").map((s) => s.trim()).filter(Boolean) : undefined,
             }));
         }
-        return { key, label: f.label.trim(), type: f.type, required: f.required, help: f.help.trim() || undefined, options, columns };
+        const notBefore = f.type === "date" && f.notBeforeUid ? keyOf.get(f.notBeforeUid) : undefined;
+        return { key, label: f.label.trim(), type: f.type, required: f.required, help: f.help.trim() || undefined, options, columns, notBefore };
       });
     return {
       title, description: description || undefined, entry_label: entryLabel, audience,
@@ -184,6 +193,16 @@ export function CollectionBuilder({ id, initial }: { id: string | null; initial:
               <Field label="Yordamchi izoh" className="md:col-span-3">
                 <Input value={f.help} onChange={(e) => patch(f.uid, { help: e.target.value })} placeholder="Maydon tagida ko‘rinadi (ixtiyoriy)" />
               </Field>
+              {f.type === "date" && fields.some((x) => x.uid !== f.uid && x.type === "date" && x.label.trim()) && (
+                <Field label="Sana tartibi" className="md:col-span-3">
+                  <Select value={f.notBeforeUid ?? ""} onChange={(e) => patch(f.uid, { notBeforeUid: e.target.value ? Number(e.target.value) : null })}>
+                    <option value="">Cheklov yo‘q</option>
+                    {fields.filter((x) => x.uid !== f.uid && x.type === "date" && x.label.trim()).map((x) => (
+                      <option key={x.uid} value={x.uid}>«{x.label}» dan oldin bo‘lmasin</option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
               {(f.type === "select" || f.type === "multiselect") && (
                 <Field label="Variantlar (har biri yangi qatordan)" required className="md:col-span-3">
                   <Textarea rows={3} value={f.optionsText} onChange={(e) => patch(f.uid, { optionsText: e.target.value })} />

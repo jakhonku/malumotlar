@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCollection, isOpen, UUID_RE } from "@/lib/public-collection";
 import type { EntryGeo } from "@/app/actions/public";
-import { DynamicForm } from "@/components/collections/dynamic-form";
+import { DynamicForm, type GeoChooser } from "@/components/collections/dynamic-form";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +18,12 @@ export default async function CollectionNewEntry({ params, searchParams }: { par
   if (!isOpen(col)) redirect(`/kiritish/c/${col.id}`);
 
   const regionId = one(sp.region);
+  const regionMode = one(sp.mode) === "region" && col.audience !== "regional";
   const scope = one(sp.scope) === "district" ? "district" : "regional";
-  if (!UUID_RE.test(regionId) || (col.audience === "regional" && scope !== "regional") || (col.audience === "district" && scope !== "district")) {
+  if (
+    !UUID_RE.test(regionId) ||
+    (!regionMode && ((col.audience === "regional" && scope !== "regional") || (col.audience === "district" && scope !== "district")))
+  ) {
     redirect(`/kiritish/c/${col.id}`);
   }
 
@@ -29,7 +33,16 @@ export default async function CollectionNewEntry({ params, searchParams }: { par
 
   const geo: EntryGeo = { scope, region_id: region.id, district_id: "" };
   let label = `${region.name} (viloyatning o‘zi)`;
-  if (scope === "district") {
+  let chooser: GeoChooser | undefined;
+  if (regionMode) {
+    const { data: ds } = await admin
+      .from("districts").select("id,name").eq("region_id", region.id).eq("is_active", true)
+      .order("district_type", { ascending: false }).order("name").limit(500);
+    geo.group_mode = "region";
+    geo.scope = "regional";
+    label = `${region.name} — viloyat boshqarmasi (viloyat va barcha tuman/shaharlar)`;
+    chooser = { districts: ds ?? [], allowRegional: col.audience !== "district", initial: col.audience === "district" ? "" : "regional" };
+  } else if (scope === "district") {
     const districtParam = one(sp.district);
     if (districtParam === "__new__") {
       const name = one(sp.name).trim();
@@ -54,7 +67,7 @@ export default async function CollectionNewEntry({ params, searchParams }: { par
       <p className="mb-5 text-sm text-slate-600">
         Ma’lumotni kiriting. Saqlagandan so‘ng hududingiz havolasi beriladi — u orqali {col.allow_multiple ? `boshqa ${col.entry_label.toLowerCase()}larni ham qo‘shish, ` : ""}tuzatish va yuborish mumkin.
       </p>
-      <DynamicForm collection={{ id: col.id, title: col.title, entry_label: col.entry_label, fields: col.fields }} token={null} entryId={null} geo={geo} geoLabel={label} initial={{}} />
+      <DynamicForm collection={{ id: col.id, title: col.title, entry_label: col.entry_label, fields: col.fields }} token={null} entryId={null} geo={geo} geoLabel={label} initial={{}} chooser={chooser} />
     </>
   );
 }

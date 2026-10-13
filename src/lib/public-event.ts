@@ -77,7 +77,8 @@ export function eventToFormValues(e: EventRow): EventFormValues {
     notes: e.notes ?? "",
     address: e.address ?? "",
     location_note: e.location_note ?? "",
-    event_date: e.start_date ?? "",
+    start_date: e.start_date ?? "",
+    end_date: e.end_date && e.end_date !== e.start_date ? e.end_date : "",
     artists: (e.artists ?? []).map((a) => ({
       artist_name: a.artist_name, artist_type: a.artist_type, performance_type: a.performance_type ?? "",
       role_description: a.role_description ?? "", notes: a.notes ?? "",

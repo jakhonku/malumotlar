@@ -38,8 +38,8 @@ const STEP_LABELS: Record<StepKey, string> = {
   extra: "Qo‘shimcha (ixtiyoriy)",
 };
 
-const BASIC_FIELDS: FieldPath<EventFormValues>[] = ["scope", "region_id", "district_id", "new_district_name", "event_type", "organization_name", "description", "notes"];
-const PLACE_FIELDS: FieldPath<EventFormValues>[] = ["address", "location_note", "event_date"];
+const BASIC_FIELDS: FieldPath<EventFormValues>[] = ["scope", "region_id", "district_id", "new_district_name", "organization_name", "description", "notes"];
+const PLACE_FIELDS: FieldPath<EventFormValues>[] = ["address", "location_note", "start_date", "end_date"];
 
 const STEP_FIELDS: Record<StepKey, FieldPath<EventFormValues>[]> = {
   basic: BASIC_FIELDS,
@@ -248,12 +248,6 @@ export function EventForm({
                 )}
                 {lockedLabel && <p className="text-xs text-slate-500 md:col-span-2">{lockedLabel}</p>}
                 </div>
-                <Field label="Tadbir turi" error={errMsg(errors.event_type)}>
-                  <Select {...register("event_type")} aria-invalid={!!errors.event_type}>
-                    <option value="">Tanlang…</option>
-                    {EVENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </Select>
-                </Field>
                 <Field label="Tashkilot yoki muassasa nomi" error={errMsg(errors.organization_name)}>
                   <Input {...register("organization_name")} />
                 </Field>
@@ -269,8 +263,11 @@ export function EventForm({
                 <Field label="Qo‘shimcha lokatsiya tavsifi" className="md:col-span-2">
                   <Input {...register("location_note")} placeholder="Zarur bo‘lsa (masalan: bosh maydon, sahna oldi)" />
                 </Field>
-                <Field label="Tadbir o‘tkaziladigan sana" required error={errMsg(errors.event_date)}>
-                  <Input type="date" {...register("event_date")} aria-invalid={!!errors.event_date} />
+                <Field label="Tadbir boshlanish sanasi" required error={errMsg(errors.start_date)}>
+                  <Input type="date" {...register("start_date")} aria-invalid={!!errors.start_date} />
+                </Field>
+                <Field label="Tadbir tugash sanasi" error={errMsg(errors.end_date)} hint="Bir kunlik tadbirda bo‘sh qoldiring.">
+                  <Input type="date" {...register("end_date")} aria-invalid={!!errors.end_date} />
                 </Field>
               </div>
             )}
@@ -360,7 +357,7 @@ function ArtistsStep() {
   const { fields, append, remove } = useFieldArray({ control, name: "artists" });
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-600">Har bir san’atkor yoki jamoa uchun alohida qator qo‘shing: F.I.Sh. (yoki jamoa nomi) va janri.</p>
+      <p className="text-sm text-slate-600">Har bir san’atkor yoki jamoa uchun alohida qator qo‘shing: F.I.Sh. (yoki jamoa nomi) va unvoni.</p>
       {fields.length === 0 && <p className="rounded-md bg-slate-50 px-3 py-5 text-center text-sm text-slate-500">Hali san’atkor qo‘shilmagan</p>}
       {fields.map((f, i) => (
         <div key={f.id} className="grid items-end gap-3 rounded-lg border border-slate-200 p-3 md:grid-cols-[9rem_1fr_14rem_auto]">
@@ -373,8 +370,8 @@ function ArtistsStep() {
           <Field label="F.I.Sh. yoki jamoa nomi" required error={errMsg(errors.artists?.[i]?.artist_name)}>
             <Input {...register(`artists.${i}.artist_name`)} aria-invalid={!!errors.artists?.[i]?.artist_name} />
           </Field>
-          <Field label="Janri">
-            <Input {...register(`artists.${i}.performance_type`)} placeholder="Estrada, raqs, xalq qo‘shig‘i…" />
+          <Field label="Unvoni">
+            <Input {...register(`artists.${i}.performance_type`)} placeholder="Masalan: O‘zbekiston xalq artisti" />
           </Field>
           <Button variant="ghost" size="icon" onClick={() => remove(i)} aria-label="O‘chirish"><Trash2 className="h-4 w-4 text-red-700" /></Button>
         </div>
@@ -525,7 +522,7 @@ function ReviewSummary({ v, regions, districts }: { v: EventFormValues; regions:
       <Row k="Hudud">{[region, district].filter(Boolean).join(" · ")}</Row>
       <Row k="Turi">{v.event_type}</Row>
       <Row k="Manzil">{v.address}</Row>
-      <Row k="Sana">{v.event_date}</Row>
+      <Row k="Sana">{v.start_date && (v.end_date && v.end_date !== v.start_date ? `${v.start_date} — ${v.end_date}` : v.start_date)}</Row>
       <Row k={`San’atkorlar va jamoalar (${v.artists.length})`}>
         {v.artists.length > 0 && <ul className="list-disc pl-4">{v.artists.map((a, i) => <li key={i}>{a.artist_name}{a.performance_type && ` — ${a.performance_type}`}</li>)}</ul>}
       </Row>

@@ -85,7 +85,6 @@ export async function EventsView({
                 <Th>Viloyat/hudud</Th>
                 <Th>Daraja</Th>
                 <Th>Tuman/shahar</Th>
-                <Th>Tadbir turi</Th>
                 <Th>Manzil</Th>
                 <Th>{sortLink("start_date", "Sana")}</Th>
                 <Th>Mas’ul ijrochi</Th>
@@ -102,9 +101,11 @@ export async function EventsView({
                     <Td>{e.region?.name}</Td>
                     <Td><ScopeBadge scope={e.event_scope} /></Td>
                     <Td>{e.district?.name ?? <span className="text-slate-400">—</span>}</Td>
-                    <Td className="min-w-40 font-medium">{e.event_type ?? "—"}</Td>
                     <Td className="min-w-40">{e.address ?? "—"}</Td>
-                    <Td className="whitespace-nowrap">{fmtDate(e.start_date)}</Td>
+                    <Td className="whitespace-nowrap">
+                      {fmtDate(e.start_date)}
+                      {e.end_date && e.end_date !== e.start_date && <div className="text-xs text-slate-500">– {fmtDate(e.end_date)}</div>}
+                    </Td>
                     <Td className="min-w-40">
                       {primary ? (
                         <>

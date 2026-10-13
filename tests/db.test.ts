@@ -71,7 +71,7 @@ beforeAll(async () => {
     alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
     alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
   `);
-  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "seed.sql"]) {
+  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "seed.sql"]) {
     await db.exec(sql(f));
   }
   await db.exec("grant all on all tables in schema public to service_role;");
@@ -628,5 +628,67 @@ describe("umumiy ma’lumot yig‘ish (collections)", () => {
     const d = await as(ids.admin, () => q("select * from col_monitoring_districts($1,$2)", [colId, samarqand]));
     expect(d.find((x) => x.district_id === urgut)!.sent).toBe(true);
     expect(d.find((x) => x.district_name === "Samarqand shahri")!.sent).toBe(false);
+  });
+});
+
+describe("viloyat boshqarmasi rejimi (bitta havola — viloyat va barcha tumanlar)", () => {
+  const hex = (c: string) => ("rg" + c).repeat(32).slice(0, 64);
+  let colId: string, singleId: string;
+  const asService = async <T,>(fn: () => Promise<T>) => {
+    await db.exec("set role service_role");
+    try {
+      return await fn();
+    } finally {
+      await db.exec("reset role");
+    }
+  };
+  const save = (col: string, token: string | null, newToken: string | null, entryId: string | null, data: object) =>
+    asService(async () =>
+      (await q("select public.col_public_save($1,$2,$3,'iph',$4,$5::jsonb) as id", [col, token, newToken, entryId, JSON.stringify(data)]))[0].id as string);
+  const entry = (extra: object = {}) => ({ group_mode: "region", region_id: samarqand, answers: { nomi: "X" }, ...extra });
+
+  beforeAll(async () => {
+    const fields = JSON.stringify([{ key: "nomi", label: "Nomi", type: "text", required: true }]);
+    colId = (await q("insert into collections (title, fields) values ('Boshqarma yig‘ishi', $1::jsonb) returning id", [fields]))[0].id as string;
+    singleId = (await q("insert into collections (title, fields, allow_multiple) values ('Boshqarma bitta', $1::jsonb, false) returning id", [fields]))[0].id as string;
+  });
+
+  it("bitta havolada viloyatning o‘zi va turli tumanlar uchun yozuv qo‘shiladi", async () => {
+    const t = hex("1");
+    const a = await save(colId, null, t, null, entry({ scope: "regional" }));
+    const b = await save(colId, t, null, null, entry({ scope: "district", district_id: urgut }));
+    const c = await save(colId, t, null, null, entry({ scope: "district", district_id: jomboy }));
+    const rows = await q("select id, scope, district_id, group_mode, region_id from collection_entries where edit_token_hash = $1 and collection_id = $2 order by created_at", [t, colId]);
+    expect(rows.map((r) => r.id)).toEqual([a, b, c]);
+    expect(rows.map((r) => r.district_id)).toEqual([null, urgut, jomboy]);
+    expect(rows.every((r) => r.group_mode === "region" && r.region_id === samarqand)).toBe(true);
+  });
+
+  it("viloyat o‘zgartirib bo‘lmaydi; begona viloyat tumani rad etiladi", async () => {
+    const t = hex("2");
+    await save(colId, null, t, null, entry({ scope: "regional" }));
+    const buxTuman = (await q("select id from districts where name = 'Buxoro tumani'"))[0].id;
+    expect(await fail(save(colId, t, null, null, entry({ scope: "district", region_id: buxoro, district_id: buxTuman })))).toContain("viloyatga tegishli emas");
+  });
+
+  it("ro‘yxatda yo‘q tuman nomi yozilsa, shu viloyat ostida yaratiladi", async () => {
+    const t = hex("3");
+    await save(colId, null, t, null, entry({ scope: "district", new_district_name: "Boshqarma tumani" }));
+    await save(colId, t, null, null, entry({ scope: "district", new_district_name: "boshqarma TUMANI" }));
+    expect((await q("select count(*)::int as n from districts where region_id = $1 and name = 'Boshqarma tumani'", [samarqand]))[0].n).toBe(1);
+  });
+
+  it("allow_multiple=false: har bir hudud alohida bittadan; takrorlansa rad etiladi", async () => {
+    const t = hex("4");
+    await save(singleId, null, t, null, entry({ scope: "district", district_id: urgut }));
+    await save(singleId, t, null, null, entry({ scope: "district", district_id: jomboy }));
+    expect(await fail(save(singleId, t, null, null, entry({ scope: "district", district_id: urgut })))).toContain("allaqachon");
+  });
+
+  it("oddiy (unit) rejimda havola hududni almashtirishga yo‘l qo‘ymaydi", async () => {
+    const t = hex("5");
+    await save(colId, null, t, null, { scope: "district", region_id: samarqand, district_id: urgut, answers: { nomi: "A" } });
+    const id = await save(colId, t, null, null, { scope: "district", region_id: samarqand, district_id: jomboy, answers: { nomi: "B" } });
+    expect((await q("select district_id, group_mode from collection_entries where id = $1", [id]))[0]).toMatchObject({ district_id: urgut, group_mode: "unit" });
   });
 });

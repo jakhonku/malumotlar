@@ -78,7 +78,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                 <Info k="Qisqacha mazmuni">{e.description}</Info>
                 <Info k="Manzil">{e.address}</Info>
                 <Info k="Lokatsiya tavsifi">{e.location_note}</Info>
-                <Info k="Tadbir sanasi">{e.start_date ? fmtDate(e.start_date) : ""}</Info>
+                <Info k="Tadbir sanasi">{e.start_date ? (e.end_date && e.end_date !== e.start_date ? `${fmtDate(e.start_date)} — ${fmtDate(e.end_date)}` : fmtDate(e.start_date)) : ""}</Info>
                 <Info k="Qo‘shimcha izoh">{e.notes}</Info>
               </dl>
             </CardBody>

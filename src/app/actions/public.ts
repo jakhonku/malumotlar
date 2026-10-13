@@ -91,6 +91,8 @@ export interface EntryGeo {
   district_id: string; // "" | uuid | "__new__"
   new_district_name?: string;
   new_district_type?: "tuman" | "shahar";
+  /** region — viloyat boshqarmasi: bitta havolada viloyat va barcha tumanlar */
+  group_mode?: "unit" | "region";
 }
 
 export interface PublicEntryResult {
@@ -138,6 +140,7 @@ export async function savePublicEntry(
     p_ip_hash: ip,
     p_entry_id: entryId,
     p_data: {
+      group_mode: geo.group_mode === "region" ? "region" : "unit",
       scope: geo.scope,
       region_id: geo.region_id,
       district_id: geo.scope === "district" && !isNew && geo.district_id ? geo.district_id : null,

@@ -1,16 +1,29 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
-import { DynamicForm } from "@/components/collections/dynamic-form";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { DynamicForm, type GeoChooser } from "@/components/collections/dynamic-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function CollectionAddEntry({ params }: { params: Promise<{ cid: string; token: string }> }) {
+export default async function CollectionAddEntry({
+  params, searchParams,
+}: { params: Promise<{ cid: string; token: string }>; searchParams: Promise<{ unit?: string }> }) {
   const { cid, token } = await params;
+  const sp = await searchParams;
   const col = await getCollection(cid);
   const group = col ? await getEntryGroup(cid, token) : null;
   if (!col || !group) notFound();
-  if (!isOpen(col) || !col.allow_multiple) redirect(`/kiritish/c/${col.id}/t/${token}`);
+  const regionMode = group.groupMode === "region";
+  if (!isOpen(col) || (!col.allow_multiple && !regionMode)) redirect(`/kiritish/c/${col.id}/t/${token}`);
+
+  let chooser: GeoChooser | undefined;
+  if (regionMode) {
+    const { data: ds } = await createAdminClient()
+      .from("districts").select("id,name").eq("region_id", group.regionId).eq("is_active", true)
+      .order("district_type", { ascending: false }).order("name").limit(500);
+    chooser = { districts: ds ?? [], allowRegional: col.audience !== "district", initial: sp.unit ?? "" };
+  }
 
   return (
     <>
@@ -20,9 +33,10 @@ export default async function CollectionAddEntry({ params }: { params: Promise<{
         collection={{ id: col.id, title: col.title, entry_label: col.entry_label, fields: col.fields }}
         token={token}
         entryId={null}
-        geo={{ scope: group.scope, region_id: group.regionId, district_id: group.districtId ?? "" }}
+        geo={{ scope: group.scope, region_id: group.regionId, district_id: group.districtId ?? "", group_mode: group.groupMode }}
         geoLabel={unitLabel(group)}
         initial={{}}
+        chooser={chooser}
       />
     </>
   );

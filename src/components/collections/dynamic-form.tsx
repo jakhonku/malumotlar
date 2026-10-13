@@ -112,8 +112,15 @@ function FieldInput({
   }
 }
 
+export interface GeoChooser {
+  districts: { id: string; name: string }[];
+  allowRegional: boolean;
+  /** boshlang‘ich tanlov: "regional" | tuman id | "" */
+  initial: string;
+}
+
 export function DynamicForm({
-  collection, token, entryId, geo, geoLabel, initial,
+  collection, token, entryId, geo, geoLabel, initial, chooser,
 }: {
   collection: { id: string; title: string; entry_label: string; fields: FieldDef[] };
   token: string | null;
@@ -121,12 +128,18 @@ export function DynamicForm({
   geo: EntryGeo;
   geoLabel: string;
   initial: Answers;
+  /** Viloyat boshqarmasi rejimi: har bir yozuvda hududni tanlash */
+  chooser?: GeoChooser;
 }) {
   const router = useRouter();
   const [values, setValues] = useState<Values>(initial as Values);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
+  const [sel, setSel] = useState(chooser?.initial ?? "");
+  const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState<"tuman" | "shahar">("tuman");
+  const [geoError, setGeoError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const set = (key: string, v: Values[string]) => {
@@ -141,6 +154,18 @@ export function DynamicForm({
 
   function persist(mode: "draft" | "submit") {
     setServerError(null);
+    let useGeo: EntryGeo = geo;
+    if (chooser) {
+      if (!sel) return void (setGeoError("Qaysi hudud uchun ma’lumot kiritilayotganini tanlang"), toast.error("Hududni tanlang"));
+      if (sel === "__new__" && newName.trim().length < 3) return void (setGeoError("Tuman/shahar nomini yozing"), toast.error("Tuman/shahar nomini yozing"));
+      useGeo =
+        sel === "regional"
+          ? { ...geo, scope: "regional", district_id: "" }
+          : sel === "__new__"
+            ? { ...geo, scope: "district", district_id: "__new__", new_district_name: newName.trim(), new_district_type: newType }
+            : { ...geo, scope: "district", district_id: sel };
+      setGeoError(null);
+    }
     const check = validateAnswers(collection.fields, values as Record<string, unknown>, mode === "draft");
     if (!check.ok) {
       setErrors(check.errors);
@@ -149,7 +174,7 @@ export function DynamicForm({
       return;
     }
     start(async () => {
-      const res = await savePublicEntry(collection.id, token, entryId, geo, values as Record<string, unknown>, mode);
+      const res = await savePublicEntry(collection.id, token, entryId, useGeo, values as Record<string, unknown>, mode);
       if (!res.ok) {
         if (res.fieldErrors) setErrors(res.fieldErrors);
         setServerError(res.error ?? "Xatolik yuz berdi");
@@ -170,6 +195,32 @@ export function DynamicForm({
         <p className="text-xs uppercase tracking-wide text-blue-700">Ma’lumot kiritilayotgan hudud</p>
         <p className="font-semibold">{geoLabel}</p>
       </div>
+
+      {chooser && (
+        <Card>
+          <CardBody className="grid gap-4 md:grid-cols-3">
+            <Field label="Qaysi hudud uchun kiritilmoqda?" required error={geoError ?? undefined} className="md:col-span-2" hint="Har bir tuman/shahar uchun alohida yozuv kiritiladi.">
+              <Select value={sel} onChange={(e) => { setSel(e.target.value); setGeoError(null); }} disabled={!!entryId}>
+                <option value="">Tanlang…</option>
+                {chooser.allowRegional && <option value="regional">Viloyatning o‘zi</option>}
+                {chooser.districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                <option value="__new__">➕ Ro‘yxatda yo‘q — nomini o‘zim yozaman</option>
+              </Select>
+            </Field>
+            {sel === "__new__" && (
+              <>
+                <Field label="Tuman/shahar nomi" required className="md:col-span-2"><Input value={newName} onChange={(e) => setNewName(e.target.value)} /></Field>
+                <Field label="Turi">
+                  <Select value={newType} onChange={(e) => setNewType(e.target.value as "tuman" | "shahar")}>
+                    <option value="tuman">Tuman</option>
+                    <option value="shahar">Shahar</option>
+                  </Select>
+                </Field>
+              </>
+            )}
+          </CardBody>
+        </Card>
+      )}
 
       <Card>
         <CardBody className="grid gap-4 md:grid-cols-2">

@@ -110,10 +110,33 @@ describe("qatorlar maydoni (rows)", () => {
   it("sxema: qatorlar maydoni kataklarsiz yoki takroriy kalit bilan rad etiladi; shablonda san’atkorlar qatorlar", () => {
     const t = newYearTemplate();
     const art = t.fields.find((f) => f.type === "rows" && f.label.startsWith("San"));
-    expect(art?.columns?.map((c) => c.label)).toEqual(["F.I.Sh. yoki jamoa nomi", "Janri"]);
+    expect(art?.columns?.map((c) => c.label)).toEqual(["F.I.Sh. yoki jamoa nomi", "Unvoni"]);
     expect(collectionInputSchema.safeParse({ ...t, fields: [{ key: "x", label: "Ro‘yxat", type: "rows", required: false, columns: [] }] }).success).toBe(false);
     const dup = { key: "x", label: "Ro‘yxat", type: "rows", required: false, columns: [{ key: "a", label: "A", type: "text" }, { key: "a", label: "B", type: "text" }] };
     expect(collectionInputSchema.safeParse({ ...t, fields: [dup] }).success).toBe(false);
+  });
+});
+
+describe("Yangi yil shabloni va sana tartibi", () => {
+  const t = newYearTemplate();
+
+  it("tadbir turi yo‘q; boshlanish va tugash sanasi bor; san’atkorda unvon", () => {
+    const labels = t.fields.map((f) => f.label);
+    expect(labels).not.toContain("Tadbir turi");
+    expect(labels).not.toContain("Tadbir nomi");
+    expect(labels).toEqual(expect.arrayContaining(["Tadbir boshlanish sanasi", "Tadbir tugash sanasi"]));
+    expect(t.fields.find((f) => f.label === "Tadbir tugash sanasi")?.notBefore).toBe("tadbir_boshlanish_sanasi");
+    expect(JSON.stringify(t.fields)).not.toContain("Janri");
+  });
+
+  it("tugash sanasi boshlanishdan oldin bo‘lsa — xato; teng yoki keyin bo‘lsa — o‘tadi", () => {
+    const base = { tadbir_o_kaziladigan_manzil: "x", mas_ul_ijrochi_f_i_sh: "x" };
+    void base;
+    const dates = t.fields.filter((f) => f.type === "date");
+    const check = (start: string, end: string) => validateAnswers(dates, { tadbir_boshlanish_sanasi: start, tadbir_tugash_sanasi: end });
+    expect(check("2026-12-30", "2026-12-29").errors.tadbir_tugash_sanasi).toContain("dan oldin bo‘lmasin");
+    expect(check("2026-12-30", "2026-12-30").ok).toBe(true);
+    expect(check("2026-12-30", "2027-01-05").ok).toBe(true);
   });
 });
 

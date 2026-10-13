@@ -31,7 +31,8 @@ const valid = {
   event_type: "Bayram konserti",
   description: "", organization_name: "", notes: "", location_note: "",
   address: "Urgut shahri, 1-uy",
-  event_date: "2026-12-30",
+  start_date: "2026-12-30",
+  end_date: "2026-12-30",
   artists: [{ artist_name: "Sherzod", artist_type: "artist" as const }],
   participants: [],
   responsibles: [{ full_name: "Aliyev Vali", position: "Boshliq", phone: "90 123 45 67", is_primary: true }],
@@ -44,7 +45,7 @@ describe("validatsiya", () => {
     if (r.success) expect(r.data.responsibles[0].phone).toBe("+998901234567");
   });
   it("qoralamada majburiy maydonlar talab qilinmaydi", () => {
-    expect(draftSchema.safeParse({ ...valid, event_type: "", address: "", event_date: "", artists: [], responsibles: [] }).success).toBe(true);
+    expect(draftSchema.safeParse({ ...valid, event_type: "", address: "", start_date: "", end_date: "", artists: [], responsibles: [] }).success).toBe(true);
   });
   it("tuman tadbirida tuman tanlanishi yoki yangi nom yozilishi shart", () => {
     expect(submitSchema.safeParse({ ...valid, district_id: "" }).success).toBe(false);
@@ -60,11 +61,12 @@ describe("validatsiya", () => {
     expect(autoTitle({ address: "Urgut" })).toBe("Yangi yil tadbiri — Urgut");
     expect(autoTitle({})).toBe("Yangi yil tadbiri");
   });
-  it("manzil va tadbir sanasi majburiy; joy nomi va vaqt talab qilinmaydi", () => {
+  it("manzil va boshlanish sanasi majburiy; tugash sanasi boshlanishdan oldin bo‘lmasin", () => {
     expect(submitSchema.safeParse({ ...valid, address: "" }).success).toBe(false);
-    expect(submitSchema.safeParse({ ...valid, event_date: "" }).success).toBe(false);
-    const { address, event_date, ...rest } = valid;
-    expect(submitSchema.safeParse({ ...rest, address, event_date }).success).toBe(true);
+    expect(submitSchema.safeParse({ ...valid, start_date: "" }).success).toBe(false);
+    expect(submitSchema.safeParse({ ...valid, end_date: "2026-12-29" }).success).toBe(false);
+    expect(submitSchema.safeParse({ ...valid, end_date: "2027-01-02" }).success).toBe(true);
+    expect(submitSchema.safeParse({ ...valid, end_date: "" }).success).toBe(true); // bir kunlik
   });
   it("aynan bitta asosiy mas’ul talab qilinadi", () => {
     const two = [...valid.responsibles, { ...valid.responsibles[0], full_name: "Karimov Anvar" }];

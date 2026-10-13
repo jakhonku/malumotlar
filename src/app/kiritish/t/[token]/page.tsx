@@ -56,7 +56,7 @@ export default async function PublicUnitPage({ params }: { params: Promise<{ tok
                   <p className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />{e.address || "Manzil kiritilmagan"}</p>
                   <p className="flex items-start gap-2">
                     <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                    {e.start_date ? fmtDate(e.start_date) : "Sana kiritilmagan"}
+                    {e.start_date ? (e.end_date && e.end_date !== e.start_date ? `${fmtDate(e.start_date)} — ${fmtDate(e.end_date)}` : fmtDate(e.start_date)) : "Sana kiritilmagan"}
                   </p>
                   <p className="flex items-start gap-2"><Phone className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />{primary ? `${primary.full_name}, ${formatPhone(primary.phone)}` : "Mas’ul kiritilmagan"}</p>
                 </div>

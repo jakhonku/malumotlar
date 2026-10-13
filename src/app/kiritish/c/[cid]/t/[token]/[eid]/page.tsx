@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
-import { DynamicForm } from "@/components/collections/dynamic-form";
+import { DynamicForm, type GeoChooser } from "@/components/collections/dynamic-form";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +12,15 @@ export default async function CollectionEditEntry({ params }: { params: Promise<
   const entry = group?.entries.find((e) => e.id === eid);
   if (!col || !group || !entry) notFound();
   if (!isOpen(col) || (entry.status !== "draft" && entry.status !== "revision")) redirect(`/kiritish/c/${col.id}/t/${token}`);
+
+  const chooser: GeoChooser | undefined =
+    group.groupMode === "region"
+      ? {
+          districts: entry.district_id ? [{ id: entry.district_id, name: entry.district?.name ?? "" }] : [],
+          allowRegional: true,
+          initial: entry.scope === "regional" ? "regional" : (entry.district_id ?? ""),
+        }
+      : undefined;
 
   return (
     <>
@@ -27,9 +36,10 @@ export default async function CollectionEditEntry({ params }: { params: Promise<
         collection={{ id: col.id, title: col.title, entry_label: col.entry_label, fields: col.fields }}
         token={token}
         entryId={entry.id}
-        geo={{ scope: group.scope, region_id: group.regionId, district_id: group.districtId ?? "" }}
+        geo={{ scope: entry.scope, region_id: group.regionId, district_id: entry.district_id ?? "", group_mode: group.groupMode }}
         geoLabel={unitLabel(group)}
         initial={entry.answers}
+        chooser={chooser}
       />
     </>
   );

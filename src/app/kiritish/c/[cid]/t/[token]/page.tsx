@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Plus } from "lucide-react";
-import { getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
+import { entryUnit, getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { displayValue } from "@/lib/collections";
-import { buttonClass, Card, CardBody } from "@/components/ui/primitives";
+import { Badge, buttonClass, Card, CardBody, CardHeader, CardTitle, Table, Td, Th } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { LinkPanel } from "@/app/kiritish/t/[token]/token-panel";
 import { EntrySubmit } from "@/components/collections/entry-submit";
@@ -17,6 +18,25 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
   if (!col || !group) notFound();
 
   const open = isOpen(col);
+  const regionMode = group.groupMode === "region";
+
+  // Boshqarma rejimi: viloyat va barcha tuman/shaharlar bo'yicha to'ldirish holati
+  type Row = { key: string; name: string; unit: string; count: number; sent: number };
+  let checklist: Row[] = [];
+  if (regionMode) {
+    const { data: ds } = await createAdminClient()
+      .from("districts").select("id,name").eq("region_id", group.regionId).eq("is_active", true)
+      .order("district_type", { ascending: false }).order("name").limit(500);
+    const all = group.entries;
+    const stat = (pred: (e: (typeof all)[number]) => boolean) => {
+      const list = all.filter(pred);
+      return { count: list.length, sent: list.filter((e) => e.status === "submitted" || e.status === "approved").length };
+    };
+    if (col.audience !== "district") checklist.push({ key: "regional", name: "Viloyatning o‘zi", unit: "regional", ...stat((e) => e.scope === "regional") });
+    for (const d of ds ?? []) checklist.push({ key: d.id, name: d.name, unit: d.id, ...stat((e) => e.district_id === d.id) });
+    if (col.audience === "regional") checklist = [];
+  }
+  const filled = checklist.filter((r) => r.count > 0).length;
   const pending = group.entries.filter((e) => e.status === "draft" || e.status === "revision");
   const base = `/kiritish/c/${col.id}`;
   const label = col.entry_label;
@@ -32,8 +52,38 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
 
       {!open && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Bu ma’lumot yig‘ish yopiq — yangi yozuv qo‘shib yoki yuborib bo‘lmaydi.</div>}
 
+      {regionMode && checklist.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Hududlar bo‘yicha holat</CardTitle>
+            <span className="text-sm text-slate-600">To‘ldirilgan: <b>{filled}</b> / {checklist.length}</span>
+          </CardHeader>
+          <Table>
+            <thead><tr><Th>Hudud</Th><Th>Holati</Th><Th>Yozuvlar</Th><Th><span className="sr-only">Amal</span></Th></tr></thead>
+            <tbody>
+              {checklist.map((r) => (
+                <tr key={r.key} className="hover:bg-slate-50">
+                  <Td className="font-medium">{r.name}</Td>
+                  <Td>
+                    {r.sent > 0 ? <Badge tone="green">Yuborilgan</Badge> : r.count > 0 ? <Badge tone="amber">Yuborilmagan</Badge> : <Badge tone="red">Kiritilmagan</Badge>}
+                  </Td>
+                  <Td>{r.count}</Td>
+                  <Td>
+                    {open && (col.allow_multiple || r.count === 0) && (
+                      <Link href={`${base}/t/${token}/yangi?unit=${r.unit}`} className={buttonClass(r.count ? "outline" : "default", "sm")}>
+                        <Plus className="h-3.5 w-3.5" /> {r.count ? "Yana qo‘shish" : "Kiritish"}
+                      </Link>
+                    )}
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Card>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
-        {open && col.allow_multiple && (
+        {open && (col.allow_multiple || regionMode) && (
           <Link href={`${base}/t/${token}/yangi`} className={buttonClass("default")}><Plus className="h-4 w-4" /> Yana {label.toLowerCase()} qo‘shish</Link>
         )}
         {open && pending.length > 1 && <EntrySubmit collectionId={col.id} token={token} entryId={null} count={pending.length} label={`Hammasini yuborish (${pending.length})`} />}
@@ -47,7 +97,10 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
             <Card key={e.id}>
               <CardBody className="space-y-2">
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="text-base font-semibold text-slate-900">{i + 1}. {displayValue(col.fields[0], e.answers[col.fields[0].key]) || label}</h2>
+                  <h2 className="text-base font-semibold text-slate-900">
+                    {i + 1}. {regionMode && <span className="mr-1 rounded bg-blue-50 px-2 py-0.5 text-sm text-blue-900">{entryUnit(e)}</span>}
+                    {displayValue(col.fields[0], e.answers[col.fields[0].key]) || label}
+                  </h2>
                   <StatusBadge status={e.status} />
                 </div>
                 <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">

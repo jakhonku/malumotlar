@@ -63,7 +63,8 @@ export const draftSchema = z
     title: optionalText,
     event_type: optionalText,
     address: optionalText,
-    event_date: z.string().optional(),
+    start_date: z.string().optional(),
+    end_date: z.string().optional(),
     responsibles: z.array(responsibleSchema),
   })
   .superRefine(checkDates);
@@ -75,7 +76,8 @@ export const submitSchema = z
     title: optionalText,
     event_type: optionalText,
     address: z.string().trim().min(5, "Tadbir o‘tkaziladigan manzilni to‘liq kiriting"),
-    event_date: dateStr,
+    start_date: dateStr,
+    end_date: z.union([dateStr, z.literal('')]).optional(),
     responsibles: z.array(responsibleSchema).min(1, "Kamida bitta mas’ul ijrochi kiriting"),
   })
   .superRefine(checkDates)
@@ -86,9 +88,12 @@ export const submitSchema = z
   });
 
 function checkDates(
-  v: { scope?: string; district_id?: string; new_district_name?: string },
+  v: { scope?: string; district_id?: string; new_district_name?: string; start_date?: string; end_date?: string },
   ctx: z.RefinementCtx,
 ) {
+  if (v.start_date && v.end_date && v.end_date < v.start_date) {
+    ctx.addIssue({ code: "custom", path: ["end_date"], message: "Tugash sanasi boshlanish sanasidan oldin bo‘lmasin" });
+  }
   if (v.scope === "district" && (!v.district_id || v.district_id === "__new__") && !(v.new_district_name && v.new_district_name.trim().length >= 3)) {
     ctx.addIssue({ code: "custom", path: ["district_id"], message: "Tuman/shaharni tanlang yoki nomini yozing" });
   }
@@ -108,8 +113,9 @@ export interface EventFormValues {
   notes: string;
   address: string;
   location_note: string;
-  /** Tadbir o‘tkaziladigan sana */
-  event_date: string;
+  start_date: string;
+  /** bo‘sh bo‘lsa — bir kunlik tadbir */
+  end_date: string;
   artists: {
     artist_name: string;
     artist_type: "artist" | "group";

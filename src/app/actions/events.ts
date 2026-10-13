@@ -26,17 +26,17 @@ function dbMessage(error: { code?: string; message: string }): string {
 
 
 export async function checkDuplicates(
-  values: Pick<EventFormValues, "address" | "event_date">,
+  values: Pick<EventFormValues, "address" | "start_date">,
   excludeId?: string,
 ): Promise<SaveResult["duplicates"]> {
   const profile = await getProfile();
-  if (!profile || !values.address || !values.event_date) return [];
+  if (!profile || !values.address || !values.start_date) return [];
   const supabase = await createClient();
   let q = supabase
     .from("events")
     .select("id,title,address,start_date")
     .ilike("address", values.address.trim().replace(/[%_]/g, ""))
-    .eq("start_date", values.event_date)
+    .eq("start_date", values.start_date)
     .limit(20);
   if (excludeId) q = q.neq("id", excludeId);
   const { data } = await q;
@@ -55,7 +55,7 @@ export async function saveEvent(eventId: string | null, values: EventFormValues,
   const v = parsed.data;
 
   const duplicates = await checkDuplicates(
-    { address: v.address ?? "", event_date: v.event_date ?? "" },
+    { address: v.address ?? "", start_date: v.start_date ?? "" },
     eventId ?? undefined,
   );
   if (mode === "validate") return { ok: true, duplicates };

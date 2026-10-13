@@ -32,7 +32,7 @@ React Hook Form + Zod · `docx` · `exceljs` · Vercel.
 ### 1. Supabase (bir marta)
 1. Supabase loyihasida **SQL Editor**’da quyidagilarni **tartib bilan** bajaring (har biri qayta ishga tushirishga xavfsiz):
    `supabase/migrations/0001_schema.sql` → `0002_rls.sql` → `0003_functions.sql` → `0004_export_audit.sql` → `0005_public_entry.sql`
-   → `0006_collections.sql` → `0007_simplify_event_fields.sql` → `supabase/seed.sql` (14 hudud va tuman/shaharlar).
+   → `0006_collections.sql` → `0007_simplify_event_fields.sql` → `0008_region_groups.sql` → `supabase/seed.sql` (14 hudud va tuman/shaharlar).
 2. **Authentication → Sign In / Providers → Email**: yoqilgan bo‘lsin; **Allow new users to sign up** — **o‘chirilgan** (foydalanuvchilarni faqat administrator yaratadi).
 3. *Project Settings → API* dan `URL`, `anon` va `service_role` kalitlarini oling.
 
@@ -75,7 +75,7 @@ npm run build
 
 ## Loyiha tuzilmasi
 ```
-supabase/migrations/   SQL (0001–0007)       supabase/seed.sql   hududlar
+supabase/migrations/   SQL (0001–0008)       supabase/seed.sql   hududlar
 src/proxy.ts           sessiya + yo‘naltirish   scripts/create-admin.mjs
 src/app/(app)/         vazirlik paneli          src/app/kiritish/   ochiq to‘ldirish
 src/app/api/           Word/Excel eksporti      src/lib/report/     hujjat quruvchilar
