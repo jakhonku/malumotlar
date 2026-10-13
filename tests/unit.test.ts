@@ -173,6 +173,14 @@ describe("Word hisoboti", () => {
     expect(xml).not.toContain("Tadbir nomi");
   });
 
+  it("gerb va bo‘lim nomi eski hisobotda ham bor", async () => {
+    const { default: JSZip } = await import("jszip");
+    const zip = await JSZip.loadAsync(await buildEventsReport(events, regions, districts, opts));
+    const xml = await zip.file("word/document.xml")!.async("string");
+    expect(xml).toContain("Madaniy-ommaviy tadbirlar va festivallarni tashkil etish bo‘limi");
+    expect(Object.keys(zip.files).some((f) => f.startsWith("word/media/"))).toBe(true);
+  });
+
   it("‘alohida jadvallar’ ko‘rinishi: viloyat va tumanlar alohida jadvalda", async () => {
     const xml = await xmlOf(await buildEventsReport(events, regions, districts, { ...opts, layout: "grouped" }));
     expect((xml.match(/<w:tbl>/g) ?? []).length).toBe(2);

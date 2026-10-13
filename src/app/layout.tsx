@@ -3,8 +3,8 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Yangi yil tadbirlari monitoringi — Madaniyat vazirligi",
-  description: "O‘zbekiston Respublikasi Madaniyat vazirligi: Yangi yil tadbirlarini yig‘ish, monitoring va hisobot platformasi",
+  title: "Tadbirlar ma’lumotlarini yig‘ish — Madaniyat vazirligi",
+  description: "O‘zbekiston Respublikasi Madaniyat vazirligi, Madaniy-ommaviy tadbirlar va festivallarni tashkil etish bo‘limi: ma’lumot yig‘ish, monitoring va hisobot platformasi",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -4,6 +4,7 @@ import {
 } from "docx";
 import ExcelJS from "exceljs";
 import { STATUS_LABELS } from "../constants";
+import { brandBlock } from "./brand";
 import { displayValue, type CollectionRow, type EntryRow } from "../collections";
 import type { District, Region } from "../types";
 
@@ -129,7 +130,7 @@ export async function buildCollectionDocx(
   opts: CollectionReportOptions,
 ): Promise<Buffer> {
   const children: (Paragraph | Table)[] = [
-    para("O‘ZBEKISTON RESPUBLIKASI MADANIYAT VAZIRLIGI", { bold: true, size: 28, align: AlignmentType.CENTER, after: 120 }),
+    ...brandBlock(),
     para(col.title.toUpperCase(), { bold: true, size: 28, align: AlignmentType.CENTER, after: 120 }),
     ...opts.subtitleLines.map((l) => para(l, { size: 24, align: AlignmentType.CENTER, italics: true, after: 40 })),
     para("", { after: 120 }),

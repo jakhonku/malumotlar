@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { LoginForm } from "./login-form";
+import { Emblem } from "@/components/brand/emblem";
+import { DEPARTMENT_NAME } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +17,13 @@ export default async function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-900 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center text-white">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-3xl" aria-hidden>
-            ❄
+          <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-lg">
+            <Emblem size={72} />
           </div>
           <p className="text-xs uppercase tracking-widest text-slate-300">O‘zbekiston Respublikasi</p>
           <h1 className="mt-1 text-2xl font-bold">Madaniyat vazirligi</h1>
-          <p className="mt-2 text-sm text-slate-300">Yangi yil tadbirlari monitoring tizimi</p>
+          <p className="mt-2 text-sm font-medium text-slate-100">{DEPARTMENT_NAME}</p>
+          <p className="mt-1 text-xs text-slate-300">Tadbirlar ma’lumotlarini yig‘ish va monitoring tizimi</p>
         </div>
         <div className="rounded-xl bg-white p-6 shadow-2xl">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">Tizimga kirish</h2>

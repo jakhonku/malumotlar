@@ -221,6 +221,17 @@ describe("hisobotlar (Word / Excel)", () => {
     expect(xml).not.toContain("Viloyat/hudud");
   });
 
+  it("Word: gerb rasmi va bo‘lim nomi hujjat boshida", async () => {
+    const { default: JSZip } = await import("jszip");
+    const zip = await JSZip.loadAsync(await buildCollectionDocx(col, entries, regions, districts, opts));
+    const xml = await zip.file("word/document.xml")!.async("string");
+    expect(xml).toContain("Madaniy-ommaviy tadbirlar va festivallarni tashkil etish bo‘limi");
+    expect(xml).toContain("MADANIYAT VAZIRLIGI");
+    const media = Object.keys(zip.files).filter((f) => f.startsWith("word/media/") && f.endsWith(".png"));
+    expect(media.length).toBe(1);
+    expect((await zip.file(media[0])!.async("uint8array")).length).toBeGreaterThan(2000);
+  });
+
   it("Excel: sarlavha, qatorlar va hudud ustunlari", async () => {
     const buf = await buildCollectionXlsx(col, entries, regions, districts);
     const ExcelJS = (await import("exceljs")).default;

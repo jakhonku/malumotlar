@@ -5,6 +5,7 @@ import {
 import { ARTIST_TYPE_LABELS, STATUS_LABELS } from "../constants";
 import { formatPhone } from "../phone";
 import { fmtDate } from "../format";
+import { brandBlock } from "./brand";
 import type { District, EventRow, Region } from "../types";
 
 const FONT = "Times New Roman";
@@ -176,7 +177,7 @@ function frame(reportName: string, generatedOn: string, children: (Paragraph | T
 
 function titleBlock(subtitleLines: string[]): Paragraph[] {
   return [
-    para("O‘ZBEKISTON RESPUBLIKASI MADANIYAT VAZIRLIGI", { bold: true, size: 28, align: AlignmentType.CENTER, after: 120 }),
+    ...brandBlock(),
     para("YANGI YIL BAYRAMI MUNOSABATI BILAN O‘TKAZILADIGAN TADBIRLAR TO‘G‘RISIDA MA’LUMOT", {
       bold: true, size: 28, align: AlignmentType.CENTER, after: 120,
     }),

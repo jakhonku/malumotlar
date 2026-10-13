@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  BarChart3, Bell, ClipboardCheck, ClipboardList, FileText, History, LayoutDashboard, ListChecks, LogOut, Map, Menu,
+  Bell, ClipboardCheck, ClipboardList, FileText, History, LayoutDashboard, ListChecks, LogOut, Map, Menu,
   Mic2, PlusCircle, Settings, Users, UserSquare2, X, Building2, MapPinned,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
+import { Emblem } from "@/components/brand/emblem";
+import { DEPARTMENT_NAME } from "@/lib/brand";
 import { ROLE_LABELS, type Role } from "@/lib/constants";
 import { cn } from "@/components/ui/primitives";
 
@@ -94,10 +96,12 @@ export function Sidebar({
 
   const brand = (
     <div className="flex items-center gap-3 border-b border-white/10 px-4 py-4">
-      <BarChart3 className="h-7 w-7 text-blue-300" />
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white">
+        <Emblem size={34} />
+      </div>
       <div className="leading-tight">
         <p className="text-sm font-bold text-white">Madaniyat vazirligi</p>
-        <p className="text-xs text-slate-400">Yangi yil tadbirlari</p>
+        <p className="text-[11px] text-slate-300">{DEPARTMENT_NAME}</p>
       </div>
     </div>
   );
@@ -105,7 +109,7 @@ export function Sidebar({
   return (
     <>
       <header className="app-header sticky top-0 z-30 flex items-center justify-between bg-slate-900 px-4 py-3 text-white lg:hidden">
-        <span className="text-sm font-bold">Madaniyat vazirligi</span>
+        <span className="flex items-center gap-2 text-sm font-bold"><span className="flex h-8 w-8 items-center justify-center rounded bg-white"><Emblem size={22} /></span> Madaniyat vazirligi</span>
         <button aria-label={open ? "Menyuni yopish" : "Menyuni ochish"} onClick={() => setOpen((v) => !v)} className="cursor-pointer rounded p-1 hover:bg-white/10">
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
