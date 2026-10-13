@@ -69,3 +69,4 @@ export const ACTION_LABELS: Record<string, string> = {
 
 /** Foydalanuvchi logini Supabase Auth uchun login@yangiyil.local ko‘rinishidagi email ga aylantiriladi. */
 export const LOGIN_DOMAIN = "yangiyil.local";
+export const SIGNED_BUCKET = "signed-docs";

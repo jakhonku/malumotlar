@@ -9,6 +9,11 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { LinkPanel } from "@/app/kiritish/t/[token]/token-panel";
 import { EntrySubmit } from "@/components/collections/entry-submit";
 import { EntryDelete } from "@/components/collections/entry-delete";
+import { SignedUpload } from "@/components/collections/signed-upload";
+import { listSignedFiles } from "@/lib/signed-files";
+import { fmtDateTime } from "@/lib/format";
+import { CardBody } from "@/components/ui/primitives";
+import { FileDown, FileSpreadsheet } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +42,9 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
     for (const d of ds ?? []) checklist.push({ key: d.id, name: d.name, unit: d.id, ...stat((e) => e.district_id === d.id) });
     if (col.audience === "regional") checklist = [];
   }
+  const unitKey = group.groupMode === "region" ? "boshqarma" : group.districtId ?? "viloyat";
+  const files = await listSignedFiles(col.id, { regionId: group.regionId, unit: unitKey }).catch(() => []);
+  const exportHref = (f: string) => `/kiritish/export?c=${col.id}&t=${token}&format=${f}`;
   const filled = checklist.filter((r) => r.count > 0).length;
   const pending = group.entries.filter((e) => e.status === "draft" || e.status === "revision");
   const base = `/kiritish/c/${col.id}`;
@@ -142,6 +150,38 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
           <span className="text-sm font-medium text-emerald-700">Yuboriladigan yozuv yo‘q.</span>
         )}
       </div>
+
+      <Card className="border-blue-300">
+        <CardHeader><CardTitle>Tasdiqlash: yuklab oling → imzolang → PDF yuboring</CardTitle></CardHeader>
+        <CardBody className="space-y-4">
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-700">
+            <li>Yuqoridagi jadvalni tekshiring va <b>Word</b> (yoki Excel) ko‘rinishida yuklab oling.</li>
+            <li>Chop eting yoki elektron imzolang (rahbar imzosi, muhr), so‘ng <b>PDF</b> qiling.</li>
+            <li>Imzolangan PDF ni shu yerdan yuboring — vazirlik uni ko‘radi.</li>
+          </ol>
+          <div className="flex flex-wrap gap-2">
+            <a href={exportHref("docx")} className={buttonClass("success", "lg")}><FileDown className="h-5 w-5" /> Word yuklab olish</a>
+            <a href={exportHref("xlsx")} className={buttonClass("outline", "lg")}><FileSpreadsheet className="h-5 w-5" /> Excel yuklab olish</a>
+          </div>
+          <div className="border-t border-slate-200 pt-4">
+            <p className="mb-2 text-sm font-medium text-slate-800">Imzolangan hujjatni (PDF) yuborish</p>
+            <SignedUpload collectionId={col.id} token={token} />
+            {files.length > 0 ? (
+              <ul className="mt-3 space-y-1 text-sm">
+                {files.map((f) => (
+                  <li key={f.path} className="flex flex-wrap items-center gap-2">
+                    <Badge tone="green">Yuborilgan</Badge>
+                    <a href={f.url} className="text-blue-800 underline" target="_blank" rel="noreferrer">Imzolangan hujjat · {fmtDateTime(f.uploadedAt.toISOString())}</a>
+                    {f.size > 0 && <span className="text-xs text-slate-500">{(f.size / 1024 / 1024).toFixed(1)} MB</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-amber-800">Imzolangan hujjat hali yuborilmagan.</p>
+            )}
+          </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }

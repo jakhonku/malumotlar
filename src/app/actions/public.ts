@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEventPayload, normalizeDistrictName, toFieldErrors } from "@/lib/event-payload";
 import { validateAnswers, type CollectionRow } from "@/lib/collections";
+import { BUCKET, ensureBucket, signedPath } from "@/lib/signed-files";
 import { draftSchema, submitSchema, type EventFormValues } from "@/lib/validators";
 
 export interface PublicSaveResult {
@@ -205,4 +206,29 @@ export async function deletePublicEntry(collectionId: string, token: string, ent
     p_collection: collectionId, p_token_hash: sha256(token), p_entry_id: entryId, p_ip_hash: await ipHash(),
   });
   return error ? { ok: false, error: dbMessage(error) } : { ok: true };
+}
+
+/** Imzolangan PDF ni yuklash uchun bir martalik manzil (token egasi uchun). Fayl brauzerdan to'g'ridan-to'g'ri saqlash joyiga yuklanadi. */
+export async function createSignedUpload(
+  collectionId: string,
+  token: string,
+): Promise<{ ok: boolean; path?: string; uploadToken?: string; error?: string }> {
+  if (!TOKEN_RE.test(token) || !UUID_RE.test(collectionId)) return { ok: false, error: "Havola noto‘g‘ri" };
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("collection_entries")
+    .select("region_id,district_id,scope,group_mode")
+    .eq("collection_id", collectionId)
+    .eq("edit_token_hash", sha256(token))
+    .is("deleted_at", null)
+    .order("created_at")
+    .limit(1);
+  const first = data?.[0];
+  if (!first) return { ok: false, error: "Havola noto‘g‘ri yoki hali ma’lumot kiritilmagan" };
+  const unit = first.group_mode === "region" ? "boshqarma" : first.district_id ?? "viloyat";
+  await ensureBucket();
+  const path = signedPath(collectionId, first.region_id, unit);
+  const { data: up, error } = await admin.storage.from(BUCKET).createSignedUploadUrl(path);
+  if (error || !up) return { ok: false, error: "Yuklashni boshlab bo‘lmadi. Qayta urinib ko‘ring." };
+  return { ok: true, path: up.path, uploadToken: up.token };
 }

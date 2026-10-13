@@ -10,6 +10,8 @@ import { PAGE_SIZE, STATUS_LABELS } from "@/lib/constants";
 import { fmtDate } from "@/lib/format";
 import { Badge, Button, buttonClass, Card, CardBody, EmptyState, PageHeader, Select, Table, Td, Th } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { listSignedFiles } from "@/lib/signed-files";
+import { fmtDateTime } from "@/lib/format";
 import { ExportBar } from "@/components/collections/export-bar";
 import { CollectionToggle } from "@/components/collections/collection-toggle";
 
@@ -62,6 +64,11 @@ export default async function CollectionResultsPage({ params, searchParams }: { 
       }),
     ),
   );
+
+  const signed = await listSignedFiles(col.id, region ? { regionId: region } : undefined).catch(() => []);
+  const dIds = signed.map((f) => f.unit).filter((u) => /^[0-9a-f-]{36}$/.test(u));
+  const { data: dn } = dIds.length ? await supabase.from("districts").select("id,name").in("id", dIds) : { data: [] };
+  const unitName = (u: string) => (u === "viloyat" ? "Viloyatning o‘zi" : u === "boshqarma" ? "Viloyat boshqarmasi (viloyat va tumanlar)" : (dn ?? []).find((d) => d.id === u)?.name ?? "Tuman");
 
   const preview = col.fields.slice(0, 3);
   const qs = (patch: Record<string, string>) => {
@@ -130,6 +137,28 @@ export default async function CollectionResultsPage({ params, searchParams }: { 
           );
         })}
       </div>
+
+      <h2 className="mb-2 text-lg font-semibold text-slate-900">Imzolangan hujjatlar (PDF)</h2>
+      <Card className="mb-8">
+        {signed.length === 0 ? (
+          <EmptyState title="Hozircha imzolangan hujjat yuborilmagan" />
+        ) : (
+          <Table>
+            <thead><tr><Th>Viloyat</Th><Th>Hudud</Th><Th>Yuborilgan vaqt</Th><Th>Hajmi</Th><Th><span className="sr-only">Yuklab olish</span></Th></tr></thead>
+            <tbody>
+              {signed.map((f) => (
+                <tr key={f.path}>
+                  <Td className="font-medium">{regions.find((r) => r.id === f.regionId)?.name ?? "—"}</Td>
+                  <Td>{unitName(f.unit)}</Td>
+                  <Td className="whitespace-nowrap">{fmtDateTime(f.uploadedAt.toISOString())}</Td>
+                  <Td>{f.size ? `${(f.size / 1024 / 1024).toFixed(1)} MB` : "—"}</Td>
+                  <Td><a href={f.url} target="_blank" rel="noreferrer" className={buttonClass("outline", "sm")}>PDF ni ochish</a></Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card>
 
       <h2 className="mb-2 text-lg font-semibold text-slate-900">Kiritilgan ma’lumotlar</h2>
       <form className="mb-3 flex flex-wrap gap-2" method="get">
