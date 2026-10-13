@@ -217,7 +217,7 @@ describe("hisobotlar (Word / Excel)", () => {
     const buf = await buildCollectionDocx(col, entries, regions, districts, { ...opts, layout: "grouped" });
     const xml = await (await JSZip.loadAsync(buf)).file("word/document.xml")!.async("string");
     expect((xml.match(/<w:tbl>/g) ?? []).length).toBe(2); // viloyat jadvali + Urgut jadvali
-    for (const t of ["SAMARQAND VILOYATI", "Viloyatning o‘z ma’lumotlari", "Tuman va shaharlar", "Urgut tumani"]) expect(xml).toContain(t);
+    for (const t of ["SAMARQAND VILOYAT MADANIYAT BOSHQARMASI", "Viloyatning o‘z ma’lumotlari", "Tuman va shaharlar", "Urgut tumani"]) expect(xml).toContain(t);
     expect(xml).not.toContain("Viloyat/hudud");
   });
 
