@@ -1,3 +1,4 @@
+import { regionSelf } from "../brand";
 import {
   AlignmentType, BorderStyle, Document, Footer, Header, Packer, PageNumber, PageOrientation, Paragraph,
   ShadingType, Table, TableCell, TableLayoutType, TableRow, TabStopType, TextRun, VerticalAlign, WidthType,
@@ -124,7 +125,7 @@ function eventRow(e: EventRow, idx: number, showStatus: boolean, regionName: str
 }
 
 const EVENT_HEADERS = [
-  "№", "Viloyat/hudud", "Tuman/shahar", "O‘tkaziladigan manzil", "Boshlanish – tugash sanasi",
+  "№", "Hudud", "Tuman/shahar", "O‘tkaziladigan manzil", "Boshlanish – tugash sanasi",
   "San’atkorlar va ijodiy jamoalar", "Ishtirokchilar haqida ma’lumot", "Mas’ul ijrochilar (F.I.Sh., lavozimi, telefon raqami)",
 ];
 
@@ -208,7 +209,7 @@ export async function buildEventsReport(
 
       const regional = regionEvents.filter((e) => e.event_scope === "regional").sort(sortEvents);
       if (regional.length || opts.emptyMode === "mark") {
-        children.push(para("Viloyatning asosiy tadbirlari", { bold: true, size: 26, before: 120, after: 80, keepNext: true }));
+        children.push(para("Hududning asosiy tadbirlari", { bold: true, size: 26, before: 120, after: 80, keepNext: true }));
         children.push(
           regional.length
             ? makeTable(gWidths, GROUPED_HEADERS, regional.map((e, i) => withoutGeo(eventRow(e, i + 1, showStatus, region.name, ""))), gSize)
@@ -244,8 +245,8 @@ export async function buildEventsReport(
     for (const region of regions.slice().sort((a, b) => a.sort_order - b.sort_order)) {
       const regionEvents = events.filter((e) => e.region_id === region.id);
       const regional = regionEvents.filter((e) => e.event_scope === "regional").sort(sortEvents);
-      for (const e of regional) rows.push(eventRow(e, rows.length + 1, showStatus, region.name, "Viloyat (o‘zi)"));
-      if (!regional.length && opts.emptyMode === "mark") rows.push(emptyRow(region.name, "Viloyat (o‘zi)"));
+      for (const e of regional) rows.push(eventRow(e, rows.length + 1, showStatus, region.name, regionSelf(region.name)));
+      if (!regional.length && opts.emptyMode === "mark") rows.push(emptyRow(region.name, regionSelf(region.name)));
 
       const districtEvents = regionEvents.filter((e) => e.event_scope === "district");
       for (const d of districts.filter((x) => x.region_id === region.id)) {

@@ -174,7 +174,7 @@ export function EventForm({
     });
   }
 
-  const submitLabel = ctx.role === "district_manager" ? "Viloyat mas’uliga yuborish" : "Yuborish";
+  const submitLabel = ctx.role === "district_manager" ? "Hudud boshqarmasiga yuborish" : "Yuborish";
   const v = watch();
 
   return (
@@ -208,7 +208,7 @@ export function EventForm({
               <div className="grid gap-4 md:grid-cols-2">
                 {hideGeo && <GeoBanner regions={regions} districts={districts} className="md:col-span-2" />}
                 <div className={cn("grid gap-4 md:col-span-2 md:grid-cols-2", hideGeo && "hidden")}>
-                <Field label="Tadbir ko‘lami" required className="md:col-span-2" hint="Viloyatning asosiy tadbiri tuman tadbirlaridan alohida hisoblanadi.">
+                <Field label="Tadbir ko‘lami" required className="md:col-span-2" hint="Hududning asosiy tadbiri tuman tadbirlaridan alohida hisoblanadi.">
                   <Controller
                     control={control}
                     name="scope"
@@ -220,7 +220,7 @@ export function EventForm({
                     )}
                   />
                 </Field>
-                <Field label="Viloyat/hudud" required error={errMsg(errors.region_id)}>
+                <Field label="Hudud" required error={errMsg(errors.region_id)}>
                   <Select {...register("region_id", { onChange: () => setValue("district_id", "") })} disabled={regionLocked}>
                     <option value="">Tanlang…</option>
                     {regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -228,7 +228,7 @@ export function EventForm({
                 </Field>
                 <Field label="Tuman/shahar" required={scope === "district"} error={districtId === NEW_DISTRICT ? undefined : errMsg(errors.district_id)}>
                   <Select {...register("district_id")} disabled={districtLocked || scope === "regional" || !regionId}>
-                    <option value="">{scope === "regional" ? "Viloyat tadbiri uchun tanlanmaydi" : "Tanlang…"}</option>
+                    <option value="">{scope === "regional" ? "Hudud tadbiri uchun tanlanmaydi" : "Tanlang…"}</option>
                     {distOptions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                     {canAddDistrict && <option value={NEW_DISTRICT}>➕ Ro‘yxatda yo‘q — nomini o‘zim yozaman</option>}
                   </Select>
@@ -258,7 +258,7 @@ export function EventForm({
             {(key === "place" || key === "main") && (
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="Tadbir o‘tkaziladigan manzil" required error={errMsg(errors.address)} className="md:col-span-2">
-                  <Input {...register("address")} aria-invalid={!!errors.address} placeholder="Viloyat, tuman, ko‘cha, uy yoki mo‘ljal" />
+                  <Input {...register("address")} aria-invalid={!!errors.address} placeholder="Hudud, tuman, ko‘cha, uy yoki mo‘ljal" />
                 </Field>
                 <Field label="Qo‘shimcha lokatsiya tavsifi" className="md:col-span-2">
                   <Input {...register("location_note")} placeholder="Zarur bo‘lsa (masalan: bosh maydon, sahna oldi)" />
@@ -499,7 +499,7 @@ function GeoBanner({ regions, districts, className }: { regions: Opt[]; district
     <div className={cn("rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900", className)}>
       <p className="text-xs uppercase tracking-wide text-blue-700">Ma’lumot kiritilayotgan hudud</p>
       <p className="font-semibold">{region}{v.scope === "district" && district ? ` · ${district}` : ""}</p>
-      <p>{v.scope === "regional" ? "Viloyatning asosiy tadbirlari" : "Tuman/shahar tadbirlari"}</p>
+      <p>{v.scope === "regional" ? "Hududning asosiy tadbirlari" : "Tuman/shahar tadbirlari"}</p>
     </div>
   );
 }

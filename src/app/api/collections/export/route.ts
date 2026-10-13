@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   let region = sp.get("region") ?? "";
   if (profile.role === "region_manager") region = profile.region_id ?? "";
-  if (region && !UUID.test(region)) return bad("Viloyat noto‘g‘ri");
+  if (region && !UUID.test(region)) return bad("Hudud noto‘g‘ri");
 
   const supabase = await createClient();
   const { data: colRaw } = await supabase.from("collections").select("*").eq("id", id).maybeSingle();

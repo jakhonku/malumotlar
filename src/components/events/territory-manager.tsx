@@ -38,9 +38,9 @@ export function TerritoryManager({ regions, districts }: { regions: Region[]; di
   return (
     <div className="grid gap-5 lg:grid-cols-3">
       <Card className="h-fit">
-        <CardHeader><CardTitle>Viloyatlar / hududlar</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Hududlar</CardTitle></CardHeader>
         <CardBody className="space-y-3">
-          <Select value={regionId} onChange={(e) => setRegionId(e.target.value)} aria-label="Viloyat">
+          <Select value={regionId} onChange={(e) => setRegionId(e.target.value)} aria-label="Hudud">
             {regions.map((r) => <option key={r.id} value={r.id}>{r.name}{r.is_active ? "" : " (faolsiz)"}</option>)}
           </Select>
           {region && (

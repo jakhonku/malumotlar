@@ -26,9 +26,9 @@ export default async function NewEventPage({ searchParams }: { searchParams: Pro
 
   const hint =
     profile.role === "district_manager"
-      ? "Tadbir avval viloyat mas’uliga yuboriladi, tekshiruvdan so‘ng vazirlikka o‘tadi."
+      ? "Tadbir avval hudud boshqarmasiga yuboriladi, tekshiruvdan so‘ng vazirlikka o‘tadi."
       : profile.role === "region_manager"
-        ? "Viloyatning asosiy tadbiri to‘g‘ridan-to‘g‘ri vazirlikka yuboriladi."
+        ? "Hududning asosiy tadbiri to‘g‘ridan-to‘g‘ri vazirlikka yuboriladi."
         : "Vazirlik administratori istalgan hudud uchun tadbir kirita oladi.";
 
   return (

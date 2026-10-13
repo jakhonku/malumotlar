@@ -11,7 +11,7 @@ export default async function ApprovalsPage({ searchParams }: { searchParams: Pr
   let title = "Tasdiqlash markazi";
   let desc = "Tekshiruv va tasdiqlashni kutayotgan tadbirlar.";
   let stage: string | undefined;
-  if (profile.role === "region_manager") { stage = "region"; desc = "Tuman va shaharlardan kelgan, viloyat tekshiruvini kutayotgan ma’lumotlar."; }
+  if (profile.role === "region_manager") { stage = "region"; desc = "Tuman va shaharlardan kelgan, boshqarma tekshiruvini kutayotgan ma’lumotlar."; }
   if (profile.role === "super_admin") { stage = "ministry"; desc = "Vazirlik tasdig‘ini kutayotgan tadbirlar."; }
   if (profile.role === "district_manager") { status = ["revision"]; title = "Qaytarilgan ma’lumotlar"; desc = "Qayta ishlab yuborishingiz kerak bo‘lgan tadbirlar."; }
   return (

@@ -51,15 +51,15 @@ export function FilterBar({
         <Input name="q" defaultValue={sp.get("q") ?? ""} placeholder="Tadbir nomi, joy, manzil yoki tashkilot bo‘yicha qidirish" aria-label="Qidiruv" />
       </div>
       {!lockedRegion && (
-        <Select name="region" value={region} onChange={(e) => { setRegion(e.target.value); setDistrict(""); }} aria-label="Viloyat">
-          <option value="">Barcha viloyatlar</option>
+        <Select name="region" value={region} onChange={(e) => { setRegion(e.target.value); setDistrict(""); }} aria-label="Hudud">
+          <option value="">Barcha hududlar</option>
           {regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
         </Select>
       )}
       {lockedRegion && <input type="hidden" name="region" value={lockedRegion} />}
       {fixedScope !== "regional" && (
         <Select name="district" value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!region} aria-label="Tuman/shahar">
-          <option value="">{region ? "Barcha tuman/shaharlar" : "Avval viloyatni tanlang"}</option>
+          <option value="">{region ? "Barcha tuman/shaharlar" : "Avval hududni tanlang"}</option>
           {dOptions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </Select>
       )}

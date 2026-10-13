@@ -33,7 +33,7 @@ export default async function MonitoringPage() {
     <>
       <PageHeader
         title="Hududlar monitoringi"
-        description="Har bir hududning topshiriq bajarish holati. Viloyat asosiy tadbiri va tuman tadbirlari alohida tekshiriladi."
+        description="Har bir hududning topshiriq bajarish holati. Hudud asosiy tadbiri va tuman tadbirlari alohida tekshiriladi."
       />
       {regions.length === 0 ? (
         <Card><EmptyState title="Hududlar topilmadi" /></Card>
@@ -47,9 +47,9 @@ export default async function MonitoringPage() {
                   <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4 hover:bg-slate-50">
                     <ChevronDown className="h-4 w-4 text-slate-500 transition-transform group-open:rotate-180" />
                     <span className="min-w-48 flex-1 text-base font-semibold text-slate-900">{r.region_name}</span>
-                    <span className="flex items-center gap-1 text-sm" title="Viloyatning asosiy tadbiri">
+                    <span className="flex items-center gap-1 text-sm" title="Hududning asosiy tadbiri">
                       {r.regional_total > 0 ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <XCircle className="h-4 w-4 text-red-600" />}
-                      Viloyat asosiy: <b>{r.regional_total}</b>
+                      Hudud asosiy: <b>{r.regional_total}</b>
                     </span>
                     <span className="text-sm">Tumanlar: <b className="text-emerald-700">{r.districts_sent}</b> / {r.districts_total}
                       {r.districts_not_sent > 0 && <span className="ml-1 text-red-700">({r.districts_not_sent} yubormagan)</span>}
@@ -61,9 +61,9 @@ export default async function MonitoringPage() {
                   <div className="border-t border-slate-200">
                     <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 px-5 py-3 text-sm">
                       <span>
-                        Viloyatning asosiy tadbirlari: <b>{r.regional_total}</b> ta (tasdiqlangan: {r.regional_approved})
+                        Hududning asosiy tadbirlari: <b>{r.regional_total}</b> ta (tasdiqlangan: {r.regional_approved})
                       </span>
-                      <Link href={`/events/regional?region=${r.region_id}`} className="font-medium text-blue-800 hover:underline">Viloyat tadbirlarini ko‘rish →</Link>
+                      <Link href={`/events/regional?region=${r.region_id}`} className="font-medium text-blue-800 hover:underline">Hudud tadbirlarini ko‘rish →</Link>
                     </div>
                     <Table>
                       <thead>

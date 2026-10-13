@@ -7,7 +7,7 @@ export default async function RegionalEventsPage({ searchParams }: { searchParam
   const sp = await searchParams;
   return (
     <>
-      <PageHeader title="Viloyat asosiy tadbirlari" description="Viloyat miqyosidagi asosiy tadbirlar — tuman tadbirlaridan alohida." />
+      <PageHeader title="Hudud asosiy tadbirlari" description="Hudud miqyosidagi asosiy tadbirlar — tuman tadbirlaridan alohida." />
       <EventsView profile={profile} searchParams={sp} basePath="/events/regional" fixedScope="regional" />
     </>
   );

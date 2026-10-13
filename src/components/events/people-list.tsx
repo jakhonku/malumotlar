@@ -55,8 +55,8 @@ export async function PeopleList({ kind, searchParams, basePath }: { kind: "arti
     <div className="space-y-4">
       <form className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-3">
         <Input name="q" defaultValue={q} placeholder={kind === "artists" ? "San’atkor yoki jamoa nomi" : "F.I.Sh., lavozim yoki telefon"} aria-label="Qidiruv" />
-        <Select name="region" defaultValue={region} aria-label="Viloyat">
-          <option value="">Barcha viloyatlar</option>
+        <Select name="region" defaultValue={region} aria-label="Hudud">
+          <option value="">Barcha hududlar</option>
           {regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
         </Select>
         <div className="flex gap-2">

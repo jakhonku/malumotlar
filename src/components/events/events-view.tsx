@@ -82,7 +82,7 @@ export async function EventsView({
             <thead>
               <tr>
                 <Th>№</Th>
-                <Th>Viloyat/hudud</Th>
+                <Th>Hudud</Th>
                 <Th>Daraja</Th>
                 <Th>Tuman/shahar</Th>
                 <Th>Manzil</Th>

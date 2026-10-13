@@ -104,7 +104,7 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
               </Select>
             </Field>
             {form.role !== "super_admin" && (
-              <Field label="Viloyat/hudud" required={form.role !== "observer"}>
+              <Field label="Hudud" required={form.role !== "observer"}>
                 <Select value={form.region_id} onChange={(e) => { set("region_id", e.target.value); set("district_id", ""); }}>
                   <option value="">{form.role === "observer" ? "Respublika bo‘yicha (barchasi)" : "Tanlang…"}</option>
                   {regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -122,7 +122,7 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
             )}
             {form.role === "district_manager" && form.district_id === "__new__" && (
               <>
-                <Field label="Yangi tuman/shahar nomi" required hint="Viloyat ostida avtomatik yaratiladi">
+                <Field label="Yangi tuman/shahar nomi" required hint="Hudud ostida avtomatik yaratiladi">
                   <Input value={form.new_district_name} onChange={(e) => set("new_district_name", e.target.value)} />
                 </Field>
                 <Field label="Turi">

@@ -17,7 +17,7 @@ export default async function StandardEventsLanding() {
       <div>
         <h1 className="text-3xl font-bold text-slate-900">Yangi yil tadbirlari qayerda va qachon o‘tkaziladi?</h1>
         <p className="mt-2 max-w-3xl text-slate-600">
-          Har bir viloyat va har bir tuman/shahar o‘z hududidagi Yangi yil tadbirlari haqidagi ma’lumotni <b>alohida</b> to‘ldiradi.
+          Har bir hudud (viloyat, Qoraqalpog‘iston Respublikasi, Toshkent shahri) va har bir tuman/shahar o‘z hududidagi Yangi yil tadbirlari haqidagi ma’lumotni <b>alohida</b> to‘ldiradi.
           Login va parol kerak emas. Masalan, Toshkent viloyati o‘z tadbirlarini, Yuqori Chirchiq tumani esa o‘z tadbirlarini kiritadi.
         </p>
       </div>

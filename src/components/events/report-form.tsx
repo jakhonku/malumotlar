@@ -11,9 +11,9 @@ interface Dist extends Opt { region_id: string }
 
 const TYPES: { value: string; label: string; needs?: ("region" | "district" | "dates")[] }[] = [
   { value: "all", label: "Butun respublika bo‘yicha barcha hududlar" },
-  { value: "region", label: "Bitta viloyat bo‘yicha", needs: ["region"] },
+  { value: "region", label: "Bitta hudud bo‘yicha", needs: ["region"] },
   { value: "district", label: "Bitta tuman/shahar bo‘yicha", needs: ["region", "district"] },
-  { value: "regional", label: "Faqat viloyat asosiy tadbirlari" },
+  { value: "regional", label: "Faqat hududlarning asosiy tadbirlari" },
   { value: "districts", label: "Faqat tuman/shahar tadbirlari" },
   { value: "period", label: "Tanlangan sana oralig‘i", needs: ["dates"] },
   { value: "approved", label: "Faqat tasdiqlangan tadbirlar" },
@@ -49,7 +49,7 @@ export function ReportForm({
   }
 
   async function generate() {
-    if (needs.includes("region") && !region) return toast.error("Viloyatni tanlang");
+    if (needs.includes("region") && !region) return toast.error("Hududni tanlang");
     if (needs.includes("district") && !district) return toast.error("Tuman/shaharni tanlang");
     if (needs.includes("dates") && !from && !to) return toast.error("Sana oralig‘ini kiriting");
     if (canPickStatus && statuses.length === 0) return toast.error("Kamida bitta holatni tanlang");
@@ -98,16 +98,16 @@ export function ReportForm({
               {visibleTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </Select>
           </Field>
-          <Field label="Viloyat/hudud" required={needs.includes("region")}>
+          <Field label="Hudud" required={needs.includes("region")}>
             <Select value={region} disabled={regionLocked} onChange={(e) => { setRegion(e.target.value); setDistrict(""); }}>
-              <option value="">{type === "all" || type === "regional" || type === "districts" || type === "approved" || type === "period" || type === "artists" || type === "responsibles" ? "Barcha viloyatlar" : "Tanlang…"}</option>
+              <option value="">{type === "all" || type === "regional" || type === "districts" || type === "approved" || type === "period" || type === "artists" || type === "responsibles" ? "Barcha hududlar" : "Tanlang…"}</option>
               {regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </Select>
           </Field>
           {(type === "district" || type === "districts" || type === "period" || type === "all") && (
             <Field label="Tuman/shahar" required={needs.includes("district")}>
               <Select value={district} disabled={districtLocked || !region} onChange={(e) => setDistrict(e.target.value)}>
-                <option value="">{region ? "Barcha tuman/shaharlar" : "Avval viloyatni tanlang"}</option>
+                <option value="">{region ? "Barcha tuman/shaharlar" : "Avval hududni tanlang"}</option>
                 {dOptions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </Select>
             </Field>
@@ -154,8 +154,8 @@ export function ReportForm({
         {type !== "artists" && type !== "responsibles" && (
           <fieldset className="space-y-1 text-sm">
             <legend className="mb-1 font-medium text-slate-700">Jadval ko‘rinishi</legend>
-            <label className="flex cursor-pointer items-center gap-2"><input type="radio" name="layout" checked={layout === "single"} onChange={() => setLayout("single")} className="h-4 w-4 accent-blue-800" /> Umumiy jadval — barcha viloyat va tumanlar bitta jadvalda</label>
-            <label className="flex cursor-pointer items-center gap-2"><input type="radio" name="layout" checked={layout === "grouped"} onChange={() => setLayout("grouped")} className="h-4 w-4 accent-blue-800" /> Alohida jadvallar — har bir viloyat va tuman o‘z jadvalida</label>
+            <label className="flex cursor-pointer items-center gap-2"><input type="radio" name="layout" checked={layout === "single"} onChange={() => setLayout("single")} className="h-4 w-4 accent-blue-800" /> Umumiy jadval — barcha hudud va tumanlar bitta jadvalda</label>
+            <label className="flex cursor-pointer items-center gap-2"><input type="radio" name="layout" checked={layout === "grouped"} onChange={() => setLayout("grouped")} className="h-4 w-4 accent-blue-800" /> Alohida jadvallar — har bir hudud va tuman o‘z jadvalida</label>
           </fieldset>
         )}
 

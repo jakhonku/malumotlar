@@ -5,7 +5,7 @@ export type Stage = "district" | "region" | "ministry";
 
 export const ROLE_LABELS: Record<Role, string> = {
   super_admin: "Vazirlik administratori",
-  region_manager: "Viloyat mas’uli",
+  region_manager: "Hudud boshqarmasi mas’uli",
   district_manager: "Tuman/shahar mas’uli",
   observer: "Kuzatuvchi",
 };
@@ -19,12 +19,12 @@ export const STATUS_LABELS: Record<EventStatus, string> = {
 
 export const STAGE_LABELS: Record<Stage, string> = {
   district: "Tuman/shahar mas’uli",
-  region: "Viloyat mas’uli",
+  region: "Hudud boshqarmasi mas’uli",
   ministry: "Vazirlik",
 };
 
 export const SCOPE_LABELS: Record<EventScope, string> = {
-  regional: "Viloyatning asosiy tadbiri",
+  regional: "Hududning asosiy tadbiri",
   district: "Tuman/shahar tadbiri",
 };
 

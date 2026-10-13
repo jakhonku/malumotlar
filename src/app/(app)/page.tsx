@@ -55,7 +55,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Jami tadbirlar" value={s.total ?? 0} href="/events" />
         {profile.role !== "district_manager" && (
-          <Stat label="Viloyat asosiy tadbirlari" value={s.regional ?? 0} href="/events/regional" />
+          <Stat label="Hudud asosiy tadbirlari" value={s.regional ?? 0} href="/events/regional" />
         )}
         {profile.role !== "district_manager" && (
           <Stat label="Tuman va shahar tadbirlari" value={s.district ?? 0} href="/events/district" />
@@ -107,7 +107,7 @@ export default async function DashboardPage() {
                       </Link>
                     </Td>
                     <Td>
-                      {e.district?.name ? e.district.name : <Badge tone="blue">Viloyat asosiy</Badge>}
+                      {e.district?.name ? e.district.name : <Badge tone="blue">Hudud asosiy</Badge>}
                       <div className="text-xs text-slate-500">{e.region?.name}</div>
                     </Td>
                     <Td className="whitespace-nowrap">{fmtDate(e.start_date)}</Td>

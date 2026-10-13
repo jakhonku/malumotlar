@@ -157,7 +157,7 @@ describe("Word hisoboti", () => {
     const xml = await xmlOf(buf);
     expect(xml).toContain("MADANIYAT VAZIRLIGI");
     expect(xml).toContain("Samarqand viloyati");
-    expect(xml).toContain("Viloyat (o‘zi)");
+    expect(xml).toContain("Viloyatning o‘zi");
     expect(xml).toContain("Urgut tumani");
     expect(xml).toContain("Tuman/shahar");
     // barcha viloyat va tumanlar BITTA jadvalda
@@ -184,7 +184,7 @@ describe("Word hisoboti", () => {
   it("‘alohida jadvallar’ ko‘rinishi: viloyat va tumanlar alohida jadvalda", async () => {
     const xml = await xmlOf(await buildEventsReport(events, regions, districts, { ...opts, layout: "grouped" }));
     expect((xml.match(/<w:tbl>/g) ?? []).length).toBe(2);
-    for (const t of ["SAMARQAND VILOYATI", "Viloyatning asosiy tadbirlari", "Tuman va shaharlar tadbirlari", "Urgut tumani"]) expect(xml).toContain(t);
+    for (const t of ["SAMARQAND VILOYATI", "Hududning asosiy tadbirlari", "Tuman va shaharlar tadbirlari", "Urgut tumani"]) expect(xml).toContain(t);
     expect(xml).not.toContain("Viloyat/hudud");
   });
 

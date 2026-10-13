@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
   const districtParam = sp.get("district") ?? "";
   const from = sp.get("from") ?? "";
   const to = sp.get("to") ?? "";
-  if (regionParam && !UUID.test(regionParam)) return bad("Viloyat noto‘g‘ri");
+  if (regionParam && !UUID.test(regionParam)) return bad("Hudud noto‘g‘ri");
   if (districtParam && !UUID.test(districtParam)) return bad("Tuman/shahar noto‘g‘ri");
   if ((from && !DATE.test(from)) || (to && !DATE.test(to))) return bad("Sana noto‘g‘ri");
   if (from && to && to < from) return bad("Tugash sanasi boshlanish sanasidan oldin bo‘lmasin");
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     filters.district = profile.district_id ?? undefined;
   }
 
-  if (type === "region" && !region) return bad("Viloyatni tanlang");
+  if (type === "region" && !region) return bad("Hududni tanlang");
   if (type === "district" && !districtParam && profile.role !== "district_manager") return bad("Tuman/shaharni tanlang");
   if (type === "period" && !from && !to) return bad("Sana oralig‘ini tanlang");
 
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
   if (filters.district) {
     const d = allDistricts.find((x) => x.id === filters.district);
     if (!d) return bad("Tuman/shahar topilmadi", 404);
-    if (region && d.region_id !== region) return bad("Tuman/shahar tanlangan viloyatga tegishli emas");
+    if (region && d.region_id !== region) return bad("Tuman/shahar tanlangan hududga tegishli emas");
     filters.region = d.region_id;
   }
 
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
   if (districtName) subtitleLines.push(`${regionName}, ${districtName}`);
   else if (regionName) subtitleLines.push(regionName);
   else subtitleLines.push("Respublika bo‘yicha barcha hududlar");
-  if (type === "regional") subtitleLines.push("Faqat viloyatlarning asosiy tadbirlari");
+  if (type === "regional") subtitleLines.push("Faqat hududlarning asosiy tadbirlari");
   if (type === "districts") subtitleLines.push("Faqat tuman va shaharlar tadbirlari");
   if (from || to) subtitleLines.push(`Davr: ${from ? fmtDate(from) : "…"} – ${to ? fmtDate(to) : "…"}`);
   subtitleLines.push(`Holati: ${statuses.map((s) => STATUS_LABELS[s]).join(", ")}`);
