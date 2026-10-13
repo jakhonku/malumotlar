@@ -1,4 +1,5 @@
 import { regionSelf } from "@/lib/brand";
+import { missingMessage } from "@/lib/completeness";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -55,9 +56,11 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
   const uploadBlock =
     group.entries.length === 0
       ? "Avval ma’lumot kiriting va yuboring — shundan keyin imzolangan PDF ni yuborish mumkin bo‘ladi."
-      : pending.length > 0
-        ? `Hali yuborilmagan yozuvlar bor (${pending.length} ta). Avval hammasini «Yuborish» orqali yuboring, so‘ng imzolangan PDF ni yuklang.`
-        : null;
+      : regionMode && checklist.some((r) => r.count === 0)
+        ? missingMessage(checklist.filter((r) => r.count === 0).map((r) => r.name))
+        : pending.length > 0
+          ? `Hali yuborilmagan yozuvlar bor (${pending.length} ta). Avval hammasini «Yuborish» orqali yuboring, so‘ng imzolangan PDF ni yuklang.`
+          : null;
 
   return (
     <div className="space-y-5">

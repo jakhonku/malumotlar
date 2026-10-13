@@ -271,3 +271,19 @@ describe("jadval ustunlarini avtomatik tartiblash", () => {
     expect(validateAnswers(eventTemplate().fields, {}, false).ok).toBe(false);
   });
 });
+
+import { missingMessage, missingUnits } from "../src/lib/completeness";
+describe("PDF yuborishdan oldin to‘liqlik tekshiruvi", () => {
+  const ds = [{ id: "a", name: "A tumani" }, { id: "b", name: "B tumani" }, { id: "c", name: "C shahri" }];
+  it("kiritilmagan hududlarni topadi", () => {
+    const entries = [{ scope: "regional", district_id: null }, { scope: "district", district_id: "a" }];
+    expect(missingUnits("both", "Viloyatning o‘zi", ds, entries)).toEqual(["B tumani", "C shahri"]);
+    expect(missingUnits("both", "Viloyatning o‘zi", ds, [{ scope: "district", district_id: "a" }])[0]).toBe("Viloyatning o‘zi");
+    expect(missingUnits("regional", "Viloyatning o‘zi", ds, [])).toEqual(["Viloyatning o‘zi"]);
+    expect(missingUnits("district", "Viloyatning o‘zi", ds, [{ scope: "district", district_id: "a" }, { scope: "district", district_id: "b" }, { scope: "district", district_id: "c" }])).toEqual([]);
+  });
+  it("xabar ro‘yxatni qisqartiradi", () => {
+    expect(missingMessage(["A", "B"])).toContain("A, B");
+    expect(missingMessage(Array.from({ length: 9 }, (_, i) => `X${i}`))).toContain("va yana 3 ta");
+  });
+});

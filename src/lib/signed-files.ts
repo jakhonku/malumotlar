@@ -20,10 +20,10 @@ export async function ensureBucket() {
 }
 
 /** unit: tuman id | "viloyat" | "boshqarma" */
-export const signedPath = (collectionId: string, regionId: string, unit: string) =>
-  `${collectionId}/${regionId}${SEP}${unit}${SEP}${Date.now()}.pdf`;
+export const signedPath = (collectionId: string, regionId: string, unit: string, byUserId?: string) =>
+  `${collectionId}/${regionId}${SEP}${unit}${SEP}${Date.now()}${byUserId ? `${SEP}${byUserId}` : ""}.pdf`;
 
-export interface SignedFile { path: string; regionId: string; unit: string; uploadedAt: Date; size: number; url: string }
+export interface SignedFile { path: string; regionId: string; unit: string; uploadedAt: Date; size: number; url: string; by: string | null }
 
 export async function listSignedFiles(collectionId: string, filter?: { regionId?: string; unit?: string }): Promise<SignedFile[]> {
   await ensureBucket();
@@ -31,14 +31,14 @@ export async function listSignedFiles(collectionId: string, filter?: { regionId?
   const { data } = await admin.storage.from(BUCKET).list(collectionId, { limit: 1000, sortBy: { column: "created_at", order: "desc" } });
   const items = (data ?? [])
     .map((f) => {
-      const [regionId, unit, ts] = f.name.replace(/\.pdf$/, "").split(SEP);
-      return { path: `${collectionId}/${f.name}`, regionId, unit, ts: Number(ts), size: (f.metadata as { size?: number } | null)?.size ?? 0 };
+      const [regionId, unit, ts, by] = f.name.replace(/\.pdf$/, "").split(SEP);
+      return { path: `${collectionId}/${f.name}`, regionId, unit, ts: Number(ts), by: /^[0-9a-f-]{36}$/i.test(by ?? "") ? by : null, size: (f.metadata as { size?: number } | null)?.size ?? 0 };
     })
     .filter((f) => f.regionId && f.unit && (!filter?.regionId || f.regionId === filter.regionId) && (!filter?.unit || f.unit === filter.unit));
   if (!items.length) return [];
   const { data: urls } = await admin.storage.from(BUCKET).createSignedUrls(items.map((i) => i.path), 3600);
   return items.map((i, idx) => ({
-    path: i.path, regionId: i.regionId, unit: i.unit, size: i.size,
+    path: i.path, regionId: i.regionId, unit: i.unit, size: i.size, by: i.by,
     uploadedAt: new Date(Number.isFinite(i.ts) ? i.ts : Date.now()), url: urls?.[idx]?.signedUrl ?? "",
   }));
 }

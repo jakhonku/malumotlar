@@ -217,7 +217,7 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
           </p>
         </CardHeader>
         <Table>
-          <thead><tr><Th>Hudud</Th><Th>Holat</Th><Th>Bajarilish</Th><Th>Aniqlik</Th><Th>Oxirgi yuborish</Th><Th><span className="sr-only">Ochish</span></Th></tr></thead>
+          <thead><tr><Th>Hudud</Th><Th>Holat</Th><Th>Bajarilish</Th><Th>Aniqlik</Th><Th>Oxirgi yuborish</Th><Th>Imzolangan PDF</Th><Th><span className="sr-only">Ochish</span></Th></tr></thead>
           <tbody>
             {ranked.map((x) => (
               <tr key={x.r.id}>
@@ -235,6 +235,7 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
                 </Td>
                 <Td>{x.rating.accuracy === null ? <span className="text-slate-400">—</span> : <b className={x.rating.accuracy >= 90 ? "text-emerald-700" : x.rating.accuracy >= 70 ? "text-amber-700" : "text-red-700"}>{x.rating.accuracy}%</b>}</Td>
                 <Td className="whitespace-nowrap text-xs">{x.lastAt ? fmtDateTime(x.lastAt) : "—"}</Td>
+                <Td>{x.pdf ? <Link href={`/imzolangan?c=${col.id}`} className="text-xs font-semibold text-emerald-700 hover:underline">✓ Yuborilgan</Link> : <span className="text-xs text-slate-400">—</span>}</Td>
                 <Td><Link href={`/collections/${col.id}/hudud/${x.r.id}`} className={buttonClass("outline", "sm")}>Tekshirish</Link></Td>
               </tr>
             ))}

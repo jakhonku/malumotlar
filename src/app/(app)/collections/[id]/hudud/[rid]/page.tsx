@@ -10,6 +10,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EntryReview } from "@/components/collections/entry-review";
 import { ApproveRegion } from "@/components/collections/approve-region";
 import { ExportBar } from "@/components/collections/export-bar";
+import { listSignedFiles } from "@/lib/signed-files";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +40,16 @@ export default async function RegionReviewPage({ params }: { params: Promise<{ i
   );
   const count = (s: string) => rows.filter((r) => r.status === s).length;
   const waiting = count("submitted");
+  const files = (await listSignedFiles(col.id, { regionId: rid }).catch(() => [])).sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
+  const last = files[0];
+  let sender = "—";
+  if (last) {
+    const adm = createAdminClient();
+    const { data: p } = last.by
+      ? await adm.from("profiles").select("full_name").eq("id", last.by).maybeSingle()
+      : await adm.from("profiles").select("full_name").eq("role", "region_manager").eq("region_id", rid).limit(1).maybeSingle();
+    sender = p?.full_name ?? "—";
+  }
 
   return (
     <>
@@ -50,6 +62,17 @@ export default async function RegionReviewPage({ params }: { params: Promise<{ i
         <span className="rounded-full bg-sky-100 px-3 py-1 font-medium text-sky-900">Tekshiruv kutmoqda: {waiting}</span>
         <span className="rounded-full bg-emerald-100 px-3 py-1 font-medium text-emerald-900">Tasdiqlangan: {count("approved")}</span>
         <span className="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-900">Qaytarilgan: {count("revision")}</span>
+      </div>
+
+      <div className={cn("mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm", last ? "border-emerald-300 bg-emerald-50" : "border-red-300 bg-red-50")}>
+        {last ? (
+          <>
+            <p><b className="text-emerald-900">Imzolangan hujjat yuborilgan.</b> Yuborgan: {sender} · {fmtDateTime(last.uploadedAt.toISOString())}</p>
+            <a href={last.url} target="_blank" rel="noreferrer" className={buttonClass("success", "sm")}>PDF ni ochish</a>
+          </>
+        ) : (
+          <p><b className="text-red-900">Imzolangan hujjat (PDF) hali yuborilmagan.</b> Viloyat boshqarmasi hammasini kiritib, imzolab yuborgach shu yerda ko‘rinadi.</p>
+        )}
       </div>
 
       <div className="mb-4"><ExportBar collectionId={col.id} regionId={rid} /></div>
