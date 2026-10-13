@@ -10,6 +10,7 @@ import type { CollectionRow } from "@/lib/collections";
 import { fmtDate } from "@/lib/format";
 import { DEPARTMENT_NAME, MINISTRY_FULL, regionOrgName, regionSelf } from "@/lib/brand";
 import { Emblem } from "@/components/brand/emblem";
+import { DeadlineTimer } from "@/components/deadline-timer";
 import { buttonClass, Card, CardBody, EmptyState, cn } from "@/components/ui/primitives";
 
 export const dynamic = "force-dynamic";
@@ -109,6 +110,10 @@ export default async function RegionPanel() {
           <Link href="/chat" className={buttonClass("outline")}><MessageSquare className="h-4 w-4" /> Vazirlik bilan chat</Link>
         </div>
       </header>
+
+      {cards.filter(({ c }) => c.deadline).map(({ c }) => (
+        <DeadlineTimer key={c.id} deadline={c.deadline!} title={`«${c.title}» — ma’lumot kiritish muddati`} />
+      ))}
 
       {cards.length === 0 ? (
         <Card><EmptyState title="Hozircha ochiq ma’lumot yig‘ish yo‘q" text="Vazirlik yangi yig‘ishni ochganda shu yerda ko‘rinadi." /></Card>

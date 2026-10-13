@@ -7,6 +7,9 @@ import { listSignedFiles } from "@/lib/signed-files";
 import type { CollectionRow } from "@/lib/collections";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { regionSelf } from "@/lib/brand";
+import { getProfile } from "@/lib/auth";
+import { DeadlineTimer } from "@/components/deadline-timer";
+import { LEVEL_ORDER, rateRegion, type Level } from "@/lib/performance";
 import { Badge, buttonClass, Card, CardBody, CardHeader, CardTitle, EmptyState, PageHeader, Table, Td, Th, cn } from "@/components/ui/primitives";
 import { DayBars, Donut, ProgressBars, type BarRow } from "@/components/charts/charts";
 
@@ -15,6 +18,11 @@ interface Ent {
   status: "submitted" | "revision" | "approved" | "draft"; created_at: string; submitted_at: string | null;
   region: { name: string } | null; district: { name: string } | null;
 }
+
+const DOT: Record<Level, string> = { green: "bg-emerald-600", yellow: "bg-amber-500", red: "bg-red-600", gray: "bg-slate-400" };
+const BAR: Record<Level, string> = { green: "bg-emerald-600", yellow: "bg-amber-500", red: "bg-red-600", gray: "bg-slate-400" };
+const PILL: Record<Level, string> = { green: "bg-emerald-100 text-emerald-800", yellow: "bg-amber-100 text-amber-900", red: "bg-red-100 text-red-800", gray: "bg-slate-100 text-slate-700" };
+const LEVEL_NAME: Record<Level, string> = { green: "A’lo / reja bo‘yicha", yellow: "E’tibor kerak", red: "Kechikmoqda / xato ko‘p", gray: "Boshlamagan" };
 
 function Kpi({ icon: Icon, label, value, of, tone, href }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number; of?: number; tone: string; href?: string }) {
   const body = (
@@ -64,6 +72,15 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
     listSignedFiles(col.id).catch(() => []),
   ]);
   const entries = ((entRaw ?? []) as unknown as Ent[]).filter((e) => e.status !== "draft");
+  const me = await getProfile();
+  let everReturned = new Set<string>(entries.filter((e) => e.status === "revision").map((e) => e.id));
+  if (me?.role === "super_admin" && entries.length) {
+    const { data: logs } = await supabase
+      .from("audit_logs").select("entity_id")
+      .in("action", ["collection.entry.return", "collection.entry.reopen"]).eq("entity_type", "collection_entry")
+      .in("entity_id", entries.map((e) => e.id).slice(0, 1500)).limit(5000);
+    everReturned = new Set([...everReturned, ...(logs ?? []).map((l) => l.entity_id as string)]);
+  }
   const districtsByRegion = new Map<string, number>();
   for (const d of distRaw ?? []) districtsByRegion.set(d.region_id, (districtsByRegion.get(d.region_id) ?? 0) + 1);
   const pdfRegions = new Set(signed.map((f) => f.regionId));
@@ -78,12 +95,22 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
     const dIds = new Set(mine.filter((e) => e.district_id).map((e) => e.district_id));
     const dApproved = new Set(mine.filter((e) => e.district_id && e.status === "approved").map((e) => e.district_id));
     const ownSent = mine.some((e) => e.scope === "regional");
+    const dSent = dIds.size;
+    const total = (col.audience !== "district" ? 1 : 0) + (col.audience !== "regional" ? (districtsByRegion.get(r.id) ?? 0) : 0);
+    const sentUnits = (col.audience !== "regional" ? dSent : 0) + (col.audience !== "district" && ownSent ? 1 : 0);
+    const lastAt = mine.reduce<string | null>((m, e) => (e.submitted_at && (!m || e.submitted_at > m) ? e.submitted_at : m), null);
+    const rating = rateRegion({
+      total, sent: sentUnits, entries: mine.length, returned: mine.filter((e) => everReturned.has(e.id)).length,
+      lastSubmittedAt: lastAt, startAt: col.created_at, deadline: col.deadline, now: new Date(),
+    });
     return {
+      rating, lastAt,
       r, sent: mine.length > 0, ownSent,
       dTotal: districtsByRegion.get(r.id) ?? 0, dSent: dIds.size, dApproved: dApproved.size,
       pending: mine.filter((e) => e.status === "submitted").length, pdf: pdfRegions.has(r.id),
     };
   });
+  const ranked = perRegion.slice().sort((a, b) => LEVEL_ORDER[a.rating.level] - LEVEL_ORDER[b.rating.level] || a.r.name.localeCompare(b.r.name));
   const regionsSent = perRegion.filter((x) => x.sent).length;
   const totalDistricts = perRegion.reduce((a, x) => a + x.dTotal, 0);
   const sentDistricts = perRegion.reduce((a, x) => a + x.dSent, 0);
@@ -135,6 +162,8 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
         </nav>
       )}
 
+      {col.deadline && <div className="mb-5"><DeadlineTimer deadline={col.deadline} title={`«${col.title}» — ma’lumot yig‘ish muddati`} /></div>}
+
       <div className="mb-5 flex flex-wrap items-center gap-2 text-sm text-slate-600">
         <b className="text-slate-900">{col.title}</b>
         {closed ? <Badge tone="red">Yopiq</Badge> : <Badge tone="green">Faol</Badge>}
@@ -170,6 +199,45 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
           <CardBody><DayBars days={days} /></CardBody>
         </Card>
       </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Hududlar reytingi — tezlik va aniqlik</CardTitle>
+          <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+            {(["green", "yellow", "red"] as Level[]).map((lv) => (
+              <span key={lv} className="flex items-center gap-1">
+                <i className={cn("inline-block h-2.5 w-2.5 rounded-full", DOT[lv])} />
+                {LEVEL_NAME[lv]}: <b>{ranked.filter((x) => x.rating.level === lv).length}</b>
+              </span>
+            ))}
+            <span>· Aniqlik = tuzatishga qaytarilmagan yozuvlar ulushi</span>
+          </p>
+        </CardHeader>
+        <Table>
+          <thead><tr><Th>Hudud</Th><Th>Holat</Th><Th>Bajarilish</Th><Th>Aniqlik</Th><Th>Oxirgi yuborish</Th><Th><span className="sr-only">Ochish</span></Th></tr></thead>
+          <tbody>
+            {ranked.map((x) => (
+              <tr key={x.r.id}>
+                <Td className="font-medium">{x.r.name}</Td>
+                <Td>
+                  <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold", PILL[x.rating.level])} title={x.rating.detail}>
+                    <i className={cn("inline-block h-2 w-2 rounded-full", DOT[x.rating.level])} /> {x.rating.label}
+                  </span>
+                </Td>
+                <Td className="min-w-32">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200"><div className={cn("h-full", BAR[x.rating.level])} style={{ width: `${x.rating.progress}%` }} /></div>
+                    <span className="w-9 text-right text-xs font-semibold">{x.rating.progress}%</span>
+                  </div>
+                </Td>
+                <Td>{x.rating.accuracy === null ? <span className="text-slate-400">—</span> : <b className={x.rating.accuracy >= 90 ? "text-emerald-700" : x.rating.accuracy >= 70 ? "text-amber-700" : "text-red-700"}>{x.rating.accuracy}%</b>}</Td>
+                <Td className="whitespace-nowrap text-xs">{x.lastAt ? fmtDateTime(x.lastAt) : "—"}</Td>
+                <Td><Link href={`/collections/${col.id}?region=${x.r.id}`} className={buttonClass("outline", "sm")}>Ochish</Link></Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </Card>
 
       <div className="mb-6 grid gap-4 xl:grid-cols-2">
         <Card>

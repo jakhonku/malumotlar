@@ -4,7 +4,7 @@ import {
   AlignmentType, BorderStyle, Document, Packer, PageBreak, Paragraph, ShadingType, Table, TableCell, TableRow, TextRun, WidthType,
 } from "docx";
 
-const SITE = "https://mots-monitoring.vercel.app/login";
+const SITE = "https://motf-monitoring.vercel.app/login";
 const FONT = "Times New Roman";
 const rows = readFileSync("viloyat-loginlar.csv", "utf8")
   .replace(/^﻿/, "").split(/\r?\n/).filter(Boolean).slice(1)
