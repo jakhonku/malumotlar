@@ -12,6 +12,7 @@ import { Emblem } from "@/components/brand/emblem";
 import { DEPARTMENT_NAME } from "@/lib/brand";
 import { ROLE_LABELS, type Role } from "@/lib/constants";
 import { cn } from "@/components/ui/primitives";
+import { PushToggle } from "@/components/push-toggle";
 
 interface NavItem { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: Role[] }
 
@@ -84,6 +85,7 @@ export function Sidebar({
       <p className="truncate text-sm font-semibold text-white">{fullName}</p>
       <p className="truncate text-xs text-slate-400">{ROLE_LABELS[role]}</p>
       <p className="mb-3 truncate text-xs text-slate-400">{scopeLabel}</p>
+      {(role === "super_admin" || role === "region_manager") && <PushToggle className="mb-2" />}
       <div className="flex gap-2">
         <Link href="/notifications" className="relative flex flex-1 items-center justify-center gap-1 rounded-md bg-white/10 px-2 py-2 text-xs text-white hover:bg-white/20">
           <Bell className="h-4 w-4" /> Xabarlar
