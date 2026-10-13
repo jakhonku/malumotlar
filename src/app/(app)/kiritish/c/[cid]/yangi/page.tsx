@@ -71,7 +71,7 @@ export default async function CollectionNewEntry({ params, searchParams }: { par
       <p className="mb-5 text-sm text-slate-600">
         Ma’lumotni kiriting. Saqlagandan so‘ng hududingiz havolasi beriladi — u orqali {col.allow_multiple ? `boshqa ${col.entry_label.toLowerCase()}larni ham qo‘shish, ` : ""}tuzatish va yuborish mumkin.
       </p>
-      <DynamicForm collection={{ id: col.id, title: col.title, entry_label: col.entry_label, fields: col.fields }} token={null} entryId={null} geo={geo} geoLabel={label} initial={{}} chooser={chooser} />
+      <DynamicForm collection={{ id: col.id, title: col.title, entry_label: col.entry_label, fields: col.fields, allow_multiple: col.allow_multiple }} token={null} entryId={null} geo={geo} geoLabel={label} initial={{}} chooser={chooser} />
     </>
   );
 }

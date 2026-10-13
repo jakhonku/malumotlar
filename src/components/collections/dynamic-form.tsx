@@ -123,9 +123,11 @@ export interface GeoChooser {
 }
 
 export function DynamicForm({
-  collection, token, entryId, geo, geoLabel, initial, chooser,
+  collection, token, entryId, entryStatus, geo, geoLabel, initial, chooser,
 }: {
-  collection: { id: string; title: string; entry_label: string; fields: FieldDef[] };
+  collection: { id: string; title: string; entry_label: string; fields: FieldDef[]; allow_multiple?: boolean };
+  /** tahrirlanayotgan yozuvning holati (yuborilgan bo‘lsa, tahrir qayta yuborishni talab qilmaydi) */
+  entryStatus?: string;
   token: string | null;
   entryId: string | null;
   geo: EntryGeo;
@@ -135,6 +137,7 @@ export function DynamicForm({
   chooser?: GeoChooser;
 }) {
   const router = useRouter();
+  const lockFilled = collection.allow_multiple === false; // bir hududga bitta yozuv
   const [values, setValues] = useState<Values>(initial as Values);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -183,7 +186,7 @@ export function DynamicForm({
         if (res.token && !token) router.push(`/kiritish/c/${collection.id}/t/${res.token}`);
         return;
       }
-      toast.success("Saqlandi. Endi jadvalni tekshirib, yuboring.");
+      toast.success(entryStatus === "submitted" ? "Yangilandi — vazirlikda yangilangan ma’lumot ko‘rinadi." : "Saqlandi. Endi jadvalni tekshirib, yuboring.");
       router.push(`/kiritish/c/${collection.id}/t/${res.token}${next ? "/yangi" : ""}`);
       router.refresh();
     });
@@ -202,8 +205,8 @@ export function DynamicForm({
             <Field label="Qaysi hudud uchun kiritilmoqda?" required error={geoError ?? undefined} className="md:col-span-2" hint="Har bir tuman/shahar uchun alohida yozuv kiritiladi.">
               <Select value={sel} onChange={(e) => { setSel(e.target.value); setGeoError(null); }} disabled={!!entryId}>
                 <option value="">Tanlang…</option>
-                {chooser.allowRegional && <option value="regional">{chooser.filled?.includes("regional") ? "✓ " : ""}{chooser.selfLabel ?? "Viloyatning o‘zi"}</option>}
-                {chooser.districts.map((d) => <option key={d.id} value={d.id}>{chooser.filled?.includes(d.id) ? "✓ " : ""}{d.name}</option>)}
+                {chooser.allowRegional && <option value="regional" disabled={lockFilled && !!chooser.filled?.includes("regional")}>{chooser.filled?.includes("regional") ? "✓ " : ""}{chooser.selfLabel ?? "Viloyatning o‘zi"}</option>}
+                {chooser.districts.map((d) => <option key={d.id} value={d.id} disabled={lockFilled && !!chooser.filled?.includes(d.id)}>{chooser.filled?.includes(d.id) ? "✓ " : ""}{d.name}{lockFilled && chooser.filled?.includes(d.id) ? " — kiritilgan (tahrirlash mumkin)" : ""}</option>)}
                 <option value="__new__">➕ Ro‘yxatda yo‘q — nomini o‘zim yozaman</option>
               </Select>
             </Field>
@@ -242,7 +245,7 @@ export function DynamicForm({
       {serverError && <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-800">{serverError}</p>}
 
       <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
-        <p className="text-sm text-slate-600">Saqlagach, kiritgan ma’lumotingiz jadval ko‘rinishida chiqadi — tekshirib, keyin yuborasiz.</p>
+        <p className="text-sm text-slate-600">{entryStatus === "submitted" ? "Bu ma’lumot yuborilgan. O‘zgartirib saqlasangiz, qayta yuborish shart emas — vazirlikda yangilangan holda ko‘rinadi." : "Saqlagach, kiritgan ma’lumotingiz jadval ko‘rinishida chiqadi — tekshirib, keyin yuborasiz."}</p>
         {chooser && !entryId && (
           <Button variant="outline" size="lg" disabled={pending} onClick={() => persist("draft", true)}>
             <Plus className="h-4 w-4" /> Saqlash va keyingi hududni kiritish

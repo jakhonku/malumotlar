@@ -115,7 +115,8 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
           </thead>
           <tbody>
             {group.entries.map((e, i) => {
-              const editable = open && (e.status === "draft" || e.status === "revision");
+              const editable = open && e.status !== "approved";
+              const sendable = e.status === "draft" || e.status === "revision";
               return (
                 <tr key={e.id} className="hover:bg-slate-50">
                   <Td className="text-slate-500">{i + 1}</Td>
@@ -133,8 +134,8 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
                     {editable && (
                       <div className="flex items-center gap-1">
                         <Link href={`${base}/t/${token}/${e.id}`} className={buttonClass("outline", "sm")}>Tahrirlash</Link>
-                        <EntrySubmit collectionId={col.id} token={token} entryId={e.id} label="Yuborish" />
-                        <EntryDelete collectionId={col.id} token={token} entryId={e.id} />
+                        {sendable && <EntrySubmit collectionId={col.id} token={token} entryId={e.id} label="Yuborish" />}
+                        {sendable && <EntryDelete collectionId={col.id} token={token} entryId={e.id} />}
                       </div>
                     )}
                   </Td>

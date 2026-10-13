@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Clock3, FileCheck2, FileText, MapPinned, Undo2 } from "lucide-react";
+import { CheckCircle2, Clock3, FileCheck2, FileText, MapPinned, Table2, Undo2 } from "lucide-react";
 import { subDays, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { getRegions } from "@/lib/queries";
@@ -144,8 +144,11 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
   return (
     <>
       <PageHeader title="Boshqaruv paneli" description="Tanlangan ma’lumot yig‘ish bo‘yicha umumiy holat. Har bir yig‘ish alohida hisoblanadi.">
-        <Link href={`/collections/${col.id}`} className={buttonClass("default", "lg")}>
-          <FileText className="h-5 w-5" /> Natijalar va hisobot
+        <Link href={`/malumotlar?c=${col.id}`} className={buttonClass("default", "lg")}>
+          <Table2 className="h-5 w-5" /> Kelgan ma’lumotlar (jadval)
+        </Link>
+        <Link href={`/collections/${col.id}`} className={buttonClass("outline", "lg")}>
+          <FileText className="h-5 w-5" /> Hisobot
         </Link>
       </PageHeader>
 

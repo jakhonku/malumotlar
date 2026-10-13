@@ -71,7 +71,7 @@ beforeAll(async () => {
     alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
     alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
   `);
-  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "migrations/0009_public_delete.sql", "migrations/0011_chat_and_hide_drafts.sql", "seed.sql"]) {
+  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "migrations/0009_public_delete.sql", "migrations/0011_chat_and_hide_drafts.sql", "migrations/0013_edit_submitted.sql", "seed.sql"]) {
     await db.exec(sql(f));
   }
   await db.exec("grant all on all tables in schema public to service_role;");
@@ -587,7 +587,11 @@ describe("umumiy ma’lumot yig‘ish (collections)", () => {
     const t = hex("9");
     const id = await save(colId, null, t, null, geo());
     expect(await submit(colId, t, id)).toBe(1);
-    expect(await fail(save(colId, t, null, id, geo()))).toContain("tahrirlab bo'lmaydi");
+    // yuborilgan (tasdiqlanmagan) yozuvni tahrirlash mumkin — holati o'zgarmaydi
+    await save(colId, t, null, id, geo({ answers: { nomi: "Tahrirlandi", soni: 6 } }));
+    const ed = (await q("select status, answers from collection_entries where id = $1", [id]))[0];
+    expect(ed.status).toBe("submitted");
+    expect((ed.answers as { nomi: string }).nomi).toBe("Tahrirlandi");
     expect((await as(ids.admin, () => q("select 1 from notifications where title like 'Yangi ma%'"))).length).toBeGreaterThan(0);
 
     expect(await fail(review(ids.region, id, "approve"))).toContain("vazirlik");
@@ -602,6 +606,7 @@ describe("umumiy ma’lumot yig‘ish (collections)", () => {
     const e2 = (await q("select status, review_comment, approved_at, answers from collection_entries where id = $1", [id]))[0];
     expect(e2).toMatchObject({ status: "approved", review_comment: null });
     expect((e2.answers as { nomi: string }).nomi).toBe("Tuzatildi");
+    expect(await fail(save(colId, t, null, id, geo()))).toContain("tasdiqlangan");
 
     await review(ids.admin, id, "reopen", "Qayta tekshirish");
     expect((await q("select status from collection_entries where id = $1", [id]))[0].status).toBe("revision");

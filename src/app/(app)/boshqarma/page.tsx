@@ -58,7 +58,7 @@ export default async function RegionPanel() {
 
       const unit = (key: string, name: string, list: typeof entries) => {
         const tile = tileOf(list.map((e) => e.status));
-        const editable = list.filter((e) => e.status === "draft" || e.status === "revision");
+        const editable = list.filter((e) => e.status !== "approved");
         const href = !group
           ? startHref
           : !list.length

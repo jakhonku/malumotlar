@@ -335,7 +335,7 @@ export function newYearTemplate(): CollectionInput {
     description: "Yangi yil bayrami munosabati bilan o‘tkaziladigan tadbirlar qayerda va qachon o‘tishi haqida ma’lumot.",
     entry_label: "Tadbir",
     audience: "both",
-    allow_multiple: true,
+    allow_multiple: false,
     is_active: true,
     deadline: null,
     fields: [

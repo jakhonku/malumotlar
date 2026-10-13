@@ -14,7 +14,7 @@ export default async function CollectionEditEntry({ params }: { params: Promise<
   const group = col ? await getEntryGroup(cid, token) : null;
   const entry = group?.entries.find((e) => e.id === eid);
   if (!col || !group || !entry) notFound();
-  if (!isOpen(col) || (entry.status !== "draft" && entry.status !== "revision")) redirect(`/kiritish/c/${col.id}/t/${token}`);
+  if (!isOpen(col) || entry.status === "approved") redirect(`/kiritish/c/${col.id}/t/${token}`);
 
   const chooser: GeoChooser | undefined =
     group.groupMode === "region"
@@ -37,7 +37,8 @@ export default async function CollectionEditEntry({ params }: { params: Promise<
         </div>
       )}
       <DynamicForm
-        collection={{ id: col.id, title: col.title, entry_label: col.entry_label, fields: col.fields }}
+        collection={{ id: col.id, title: col.title, entry_label: col.entry_label, fields: col.fields, allow_multiple: col.allow_multiple }}
+        entryStatus={entry.status}
         token={token}
         entryId={entry.id}
         geo={{ scope: entry.scope, region_id: group.regionId, district_id: entry.district_id ?? "", group_mode: group.groupMode }}

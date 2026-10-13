@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  Bell, ClipboardCheck, MessageSquare, ClipboardList, FileText, History, LayoutDashboard, ListChecks, LogOut, Map, Menu,
+  Bell, ClipboardCheck, MessageSquare, Table2, ClipboardList, FileText, History, LayoutDashboard, ListChecks, LogOut, Map, Menu,
   Mic2, PlusCircle, Settings, Users, UserSquare2, X, Building2, MapPinned,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
@@ -23,6 +23,7 @@ const NAV: NavItem[] = [
   { href: "/boshqarma", label: "Boshqarma paneli", icon: LayoutDashboard, roles: ["region_manager"] },
   { href: "/", label: "Boshqaruv paneli", icon: LayoutDashboard, roles: ["super_admin", "observer"] },
   { href: "/", label: "Bosh sahifa", icon: LayoutDashboard, roles: ["district_manager"] },
+  { href: "/malumotlar", label: "Kelgan ma’lumotlar", icon: Table2, roles: ["super_admin", "observer"] },
   { href: "/chat", label: "Chat", icon: MessageSquare, roles: ["super_admin", "region_manager"] },
   { href: "/collections", label: "Ma’lumot yig‘ish", icon: ClipboardList, roles: ["super_admin", "observer", "region_manager"] },
   { href: "/events", label: "Barcha tadbirlar", icon: ListChecks, roles: ["district_manager"] },
