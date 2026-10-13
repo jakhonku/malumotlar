@@ -6,6 +6,7 @@ import { ARTIST_TYPE_LABELS, STATUS_LABELS } from "../constants";
 import { formatPhone } from "../phone";
 import { fmtDate } from "../format";
 import { brandBlock } from "./brand";
+import { autoWidths, pickFontSize, rowCanSplit } from "./layout";
 import type { District, EventRow, Region } from "../types";
 
 const FONT = "Times New Roman";
@@ -45,14 +46,14 @@ function para(text: string, o: { bold?: boolean; size?: number; align?: (typeof 
   });
 }
 
-function cell(lines: string[] | string, width: number, o: { header?: boolean; center?: boolean } = {}) {
+function cell(lines: string[] | string, width: number, o: { header?: boolean; center?: boolean; size?: number } = {}) {
   const arr = (Array.isArray(lines) ? lines : [lines]).filter((l) => l !== undefined);
   const paragraphs = (arr.length ? arr : ["—"]).map(
     (l) =>
       new Paragraph({
         alignment: o.center || o.header ? AlignmentType.CENTER : AlignmentType.LEFT,
         spacing: { after: 40 },
-        children: [run(l, { bold: o.header, size: TABLE_TEXT })],
+        children: [run(l, { bold: o.header, size: o.size ?? TABLE_TEXT })],
       }),
   );
   return new TableCell({
@@ -65,16 +66,16 @@ function cell(lines: string[] | string, width: number, o: { header?: boolean; ce
   });
 }
 
-function makeTable(widths: number[], headers: string[], rows: (string[] | string)[][]) {
+function makeTable(widths: number[], headers: string[], rows: (string[] | string)[][], size = TABLE_TEXT) {
   const total = widths.reduce((a, b) => a + b, 0);
   return new Table({
     width: { size: total, type: WidthType.DXA },
     columnWidths: widths,
     layout: TableLayoutType.FIXED,
     rows: [
-      new TableRow({ tableHeader: true, cantSplit: true, children: headers.map((h, i) => cell(h, widths[i], { header: true })) }),
+      new TableRow({ tableHeader: true, cantSplit: true, children: headers.map((h, i) => cell(h, widths[i], { header: true, size })) }),
       ...rows.map(
-        (r) => new TableRow({ cantSplit: true, children: r.map((c, i) => cell(c, widths[i], { center: i === 0 })) }),
+        (r) => new TableRow({ cantSplit: !rowCanSplit(r), children: r.map((c, i) => cell(c, widths[i], { center: i === 0, size })) }),
       ),
     ],
   });
@@ -122,14 +123,12 @@ function eventRow(e: EventRow, idx: number, showStatus: boolean, regionName: str
   ];
 }
 
-const EVENT_COLS = [450, 1350, 1350, 3000, 1200, 2400, 2200, 3100];
 const EVENT_HEADERS = [
   "№", "Viloyat/hudud", "Tuman/shahar", "O‘tkaziladigan manzil", "Boshlanish – tugash sanasi",
   "San’atkorlar va ijodiy jamoalar", "Ishtirokchilar haqida ma’lumot", "Mas’ul ijrochilar (F.I.Sh., lavozimi, telefon raqami)",
 ];
 
 // Guruhlangan ko‘rinish: hudud ustunlarisiz (hudud sarlavha sifatida beriladi)
-const GROUPED_COLS = [480, 3500, 1400, 3200, 2800, 3700];
 const GROUPED_HEADERS = EVENT_HEADERS.filter((_, i) => i !== 1 && i !== 2);
 const withoutGeo = (row: (string[] | string)[]) => row.filter((_, i) => i !== 1 && i !== 2);
 
@@ -197,6 +196,9 @@ export async function buildEventsReport(
   const children: (Paragraph | Table)[] = [...titleBlock(opts.subtitleLines)];
 
   if (opts.layout === "grouped") {
+    const sample = events.map((e, i) => withoutGeo(eventRow(e, i + 1, showStatus, "", "")));
+    const gSize = pickFontSize(GROUPED_HEADERS.length, sample);
+    const gWidths = autoWidths(GROUPED_HEADERS, sample, PAGE_W, gSize, [450, ...GROUPED_HEADERS.slice(1).map(() => null)]);
     let rendered = 0;
     for (const region of regions.slice().sort((x, y) => x.sort_order - y.sort_order)) {
       const regionEvents = events.filter((e) => e.region_id === region.id);
@@ -209,7 +211,7 @@ export async function buildEventsReport(
         children.push(para("Viloyatning asosiy tadbirlari", { bold: true, size: 26, before: 120, after: 80, keepNext: true }));
         children.push(
           regional.length
-            ? makeTable(GROUPED_COLS, GROUPED_HEADERS, regional.map((e, i) => withoutGeo(eventRow(e, i + 1, showStatus, region.name, ""))))
+            ? makeTable(gWidths, GROUPED_HEADERS, regional.map((e, i) => withoutGeo(eventRow(e, i + 1, showStatus, region.name, ""))), gSize)
             : para(EMPTY_TEXT, { italics: true, size: 24, after: 80 }),
         );
       }
@@ -224,7 +226,7 @@ export async function buildEventsReport(
           children.push(para(d.name, { bold: true, size: 24, before: 120, after: 60, keepNext: true }));
           children.push(
             de.length
-              ? makeTable(GROUPED_COLS, GROUPED_HEADERS, de.map((e, i) => withoutGeo(eventRow(e, i + 1, showStatus, region.name, d.name))))
+              ? makeTable(gWidths, GROUPED_HEADERS, de.map((e, i) => withoutGeo(eventRow(e, i + 1, showStatus, region.name, d.name))), gSize)
               : para(EMPTY_TEXT, { italics: true, size: 24, after: 60 }),
           );
         }
@@ -252,9 +254,11 @@ export async function buildEventsReport(
         if (!de.length && opts.emptyMode === "mark") rows.push(emptyRow(region.name, d.name));
       }
     }
+    const size = pickFontSize(EVENT_HEADERS.length, rows);
+    const widths = autoWidths(EVENT_HEADERS, rows, PAGE_W, size, [450, ...EVENT_HEADERS.slice(1).map(() => null)]);
     children.push(
       rows.length
-        ? makeTable(EVENT_COLS, EVENT_HEADERS, rows)
+        ? makeTable(widths, EVENT_HEADERS, rows, size)
         : para("Tanlangan shartlar bo‘yicha tadbirlar topilmadi.", { size: 26, align: AlignmentType.CENTER, before: 400 }),
     );
   }
@@ -291,7 +295,6 @@ export async function buildPeopleReport(
     }
   }
 
-  const widths = kind === "artists" ? [480, 2700, 3000, 1500, 2300, 3300, 1850] : [480, 2700, 3000, 2600, 1800, 2900, 1650];
   const headers =
     kind === "artists"
       ? ["№", "Hudud", "San’atkor / ijodiy jamoa", "Turi", "Ijro yo‘nalishi", "Tadbir manzili", "Sana"]
@@ -302,7 +305,7 @@ export async function buildPeopleReport(
     para(kind === "artists" ? "San’atkorlar va ijodiy jamoalar ro‘yxati" : "Mas’ul ijrochilar ro‘yxati", {
       bold: true, size: 26, align: AlignmentType.CENTER, after: 120, keepNext: true,
     }),
-    rows.length ? makeTable(widths, headers, rows) : para(EMPTY_TEXT, { italics: true, size: 24, align: AlignmentType.CENTER }),
+    rows.length ? makeTable(autoWidths(headers, rows, PAGE_W, pickFontSize(headers.length, rows), [450, ...headers.slice(1).map(() => null)]), headers, rows, pickFontSize(headers.length, rows)) : para(EMPTY_TEXT, { italics: true, size: 24, align: AlignmentType.CENTER }),
   ];
   return Packer.toBuffer(frame(opts.reportName, opts.generatedOn, children));
 }

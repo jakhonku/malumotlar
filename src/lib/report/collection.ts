@@ -5,6 +5,7 @@ import {
 import ExcelJS from "exceljs";
 import { STATUS_LABELS } from "../constants";
 import { brandBlock } from "./brand";
+import { autoWidths, pickFontSize, rowCanSplit } from "./layout";
 import { displayValue, type CollectionRow, type EntryRow } from "../collections";
 import type { District, Region } from "../types";
 
@@ -56,68 +57,61 @@ interface TableRowData {
   entry: EntryRow | null;
 }
 
-/** Barcha hududlar uchun BITTA jadval: № | Viloyat | Tuman/shahar | maydonlar... | (Holati) */
-function singleTable(col: CollectionRow, rows: TableRowData[], showStatus: boolean) {
-  const n = col.fields.length + (showStatus ? 1 : 0);
-  const size = n > 9 ? 17 : n > 6 ? 18 : 20;
-  const numW = 480;
-  const geoW = n > 9 ? 1300 : 1600;
-  const each = Math.floor((PAGE_W - numW - geoW * 2) / n);
-  const widths = [numW, geoW, geoW, ...Array.from({ length: n }, () => each)];
-  const headers = ["№", "Viloyat/hudud", "Tuman/shahar", ...col.fields.map((f) => f.label), ...(showStatus ? ["Holati"] : [])];
-  return new Table({
-    width: { size: widths.reduce((a, b) => a + b, 0), type: WidthType.DXA },
-    columnWidths: widths,
-    layout: TableLayoutType.FIXED,
-    rows: [
-      new TableRow({ tableHeader: true, cantSplit: true, children: headers.map((h, i) => cell(h, widths[i], size, { header: true })) }),
-      ...rows.map((r, idx) => {
-        const e = r.entry;
-        const values = e
-          ? col.fields.map((f) => displayValue(f, e.answers[f.key]))
-          : col.fields.map((_, i) => (i === 0 ? EMPTY_TEXT : ""));
-        return new TableRow({
-          cantSplit: true,
-          children: [
-            cell(String(idx + 1), widths[0], size, { center: true }),
-            cell(r.region, widths[1], size),
-            cell(r.district, widths[2], size),
-            ...values.map((v, i) => cell(v, widths[i + 3], size)),
-            ...(showStatus ? [cell(e ? STATUS_LABELS[e.status] : "", widths[widths.length - 1], size)] : []),
-          ],
-        });
-      }),
-    ],
-  });
+interface Grid {
+  headers: string[];
+  rows: string[][];
+  widths: number[];
+  size: number;
 }
 
-/** Guruhlangan ko‘rinish uchun jadval (hudud sarlavha sifatida alohida beriladi). */
-function groupedTable(col: CollectionRow, rows: EntryRow[], showStatus: boolean) {
-  const n = col.fields.length + (showStatus ? 1 : 0);
-  const size = n > 9 ? 17 : n > 6 ? 18 : 20;
-  const first = 480;
-  const each = Math.floor((PAGE_W - first) / n);
-  const widths = [first, ...Array.from({ length: n }, () => each)];
-  const headers = ["№", ...col.fields.map((f) => f.label), ...(showStatus ? ["Holati"] : [])];
+/** Tayyor kengliklar bilan jadval chizadi. */
+function gridTable(g: Grid) {
   return new Table({
-    width: { size: widths.reduce((a, b) => a + b, 0), type: WidthType.DXA },
-    columnWidths: widths,
+    width: { size: g.widths.reduce((a, b) => a + b, 0), type: WidthType.DXA },
+    columnWidths: g.widths,
     layout: TableLayoutType.FIXED,
     rows: [
-      new TableRow({ tableHeader: true, cantSplit: true, children: headers.map((h, i) => cell(h, widths[i], size, { header: true })) }),
-      ...rows.map(
-        (r, idx) =>
+      new TableRow({ tableHeader: true, cantSplit: true, children: g.headers.map((h, i) => cell(h, g.widths[i], g.size, { header: true })) }),
+      ...g.rows.map(
+        (r) =>
           new TableRow({
-            cantSplit: true,
-            children: [
-              cell(String(idx + 1), widths[0], size, { center: true }),
-              ...col.fields.map((f, i) => cell(displayValue(f, r.answers[f.key]), widths[i + 1], size)),
-              ...(showStatus ? [cell(STATUS_LABELS[r.status], widths[widths.length - 1], size)] : []),
-            ],
+            cantSplit: !rowCanSplit(r),
+            children: r.map((v, i) => cell(v, g.widths[i], g.size, { center: i === 0 })),
           }),
       ),
     ],
   });
+}
+
+const fieldValues = (col: CollectionRow, e: EntryRow | null) =>
+  e ? col.fields.map((f) => displayValue(f, e.answers[f.key])) : col.fields.map((_, i) => (i === 0 ? EMPTY_TEXT : ""));
+
+/** Jadval tuzilmasi: ustunlar kengligi barcha qatorlar mazmunidan bir marta hisoblanadi (hamma jadvalda bir xil). */
+function makeGrid(col: CollectionRow, withGeo: boolean, all: { region: string; district: string; entry: EntryRow | null }[], showStatus: boolean) {
+  const headers = ["№", ...(withGeo ? ["Viloyat/hudud", "Tuman/shahar"] : []), ...col.fields.map((f) => f.label), ...(showStatus ? ["Holati"] : [])];
+  const body = all.map((r) => [
+    "",
+    ...(withGeo ? [r.region, r.district] : []),
+    ...fieldValues(col, r.entry),
+    ...(showStatus ? [r.entry ? STATUS_LABELS[r.entry.status] : ""] : []),
+  ]);
+  const size = pickFontSize(headers.length, body);
+  const fixed: (number | null)[] = headers.map((_, i) => (i === 0 ? 480 : null));
+  const widths = autoWidths(headers, body, PAGE_W, size, fixed);
+  return {
+    headers, widths, size,
+    /** Berilgan qatorlar uchun tayyor jadval (№ avtomatik 1, 2, 3…) */
+    render: (rows: { region: string; district: string; entry: EntryRow | null }[]) =>
+      gridTable({
+        headers, widths, size,
+        rows: rows.map((r, i) => [
+          String(i + 1),
+          ...(withGeo ? [r.region, r.district] : []),
+          ...fieldValues(col, r.entry),
+          ...(showStatus ? [r.entry ? STATUS_LABELS[r.entry.status] : ""] : []),
+        ]),
+      }),
+  };
 }
 
 const byCreated = (a: EntryRow, b: EntryRow) => a.created_at.localeCompare(b.created_at);
@@ -137,6 +131,8 @@ export async function buildCollectionDocx(
   ];
 
   if (opts.layout === "grouped") {
+    const grid = makeGrid(col, false, entries.map((e) => ({ region: "", district: "", entry: e })), opts.showStatus);
+    const tbl = (list: EntryRow[]) => grid.render(list.map((e) => ({ region: "", district: "", entry: e })));
     let rendered = 0;
     for (const region of regions.slice().sort((x, y) => x.sort_order - y.sort_order)) {
       const inRegion = entries.filter((e) => e.region_id === region.id);
@@ -148,7 +144,7 @@ export async function buildCollectionDocx(
         const own = inRegion.filter((e) => e.scope === "regional").sort(byCreated);
         if (own.length || opts.emptyMode === "mark") {
           children.push(para("Viloyatning o‘z ma’lumotlari", { bold: true, size: 26, before: 120, after: 80, keepNext: true }));
-          children.push(own.length ? groupedTable(col, own, opts.showStatus) : para(EMPTY_TEXT, { italics: true, size: 24, after: 80 }));
+          children.push(own.length ? tbl(own) : para(EMPTY_TEXT, { italics: true, size: 24, after: 80 }));
         }
       }
       if (col.audience !== "regional") {
@@ -160,7 +156,7 @@ export async function buildCollectionDocx(
           for (const d of list) {
             const de = dEntries.filter((e) => e.district_id === d.id).sort(byCreated);
             children.push(para(d.name, { bold: true, size: 24, before: 120, after: 60, keepNext: true }));
-            children.push(de.length ? groupedTable(col, de, opts.showStatus) : para(EMPTY_TEXT, { italics: true, size: 24, after: 60 }));
+            children.push(de.length ? tbl(de) : para(EMPTY_TEXT, { italics: true, size: 24, after: 60 }));
           }
         }
       }
@@ -190,7 +186,7 @@ export async function buildCollectionDocx(
     }
     children.push(
       rows.length
-        ? singleTable(col, rows, opts.showStatus)
+        ? makeGrid(col, true, rows, opts.showStatus).render(rows)
         : para("Tanlangan shartlar bo‘yicha ma’lumot topilmadi.", { size: 26, align: AlignmentType.CENTER, before: 400 }),
     );
   }
