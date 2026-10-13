@@ -123,7 +123,7 @@ export interface GeoChooser {
 }
 
 export function DynamicForm({
-  collection, token, entryId, entryStatus, geo, geoLabel, initial, chooser,
+  collection, token, entryId, entryStatus, geo, geoLabel, initial, chooser, adminSave,
 }: {
   collection: { id: string; title: string; entry_label: string; fields: FieldDef[]; allow_multiple?: boolean };
   /** tahrirlanayotgan yozuvning holati (yuborilgan bo‘lsa, tahrir qayta yuborishni talab qilmaydi) */
@@ -135,6 +135,8 @@ export function DynamicForm({
   initial: Answers;
   /** Viloyat boshqarmasi rejimi: har bir yozuvda hududni tanlash */
   chooser?: GeoChooser;
+  /** Administrator tahriri: saqlash amali va qaytish manzili */
+  adminSave?: { save: (values: Record<string, unknown>) => Promise<{ ok: boolean; error?: string; fieldErrors?: Record<string, string> }>; redirectTo: string };
 }) {
   const router = useRouter();
   const lockFilled = collection.allow_multiple === false; // bir hududga bitta yozuv
@@ -175,6 +177,20 @@ export function DynamicForm({
     if (!check.ok) {
       setErrors(check.errors);
       toast.error("Ba’zi maydonlar to‘ldirilmagan yoki noto‘g‘ri");
+      return;
+    }
+    if (adminSave) {
+      start(async () => {
+        const r = await adminSave.save(values as Record<string, unknown>);
+        if (!r.ok) {
+          if (r.fieldErrors) setErrors(r.fieldErrors);
+          setServerError(r.error ?? "Xatolik yuz berdi");
+          return void toast.error(r.error ?? "Xatolik yuz berdi");
+        }
+        toast.success("Ma’lumot yangilandi");
+        router.push(adminSave.redirectTo);
+        router.refresh();
+      });
       return;
     }
     start(async () => {
@@ -245,14 +261,14 @@ export function DynamicForm({
       {serverError && <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-800">{serverError}</p>}
 
       <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
-        <p className="text-sm text-slate-600">{entryStatus === "submitted" ? "Bu ma’lumot yuborilgan. O‘zgartirib saqlasangiz, qayta yuborish shart emas — vazirlikda yangilangan holda ko‘rinadi." : "Saqlagach, kiritgan ma’lumotingiz jadval ko‘rinishida chiqadi — tekshirib, keyin yuborasiz."}</p>
+        <p className="text-sm text-slate-600">{adminSave ? "Administrator tahriri: saqlagach yozuv holati o‘zgarmaydi." : entryStatus === "submitted" ? "Bu ma’lumot yuborilgan. O‘zgartirib saqlasangiz, qayta yuborish shart emas — vazirlikda yangilangan holda ko‘rinadi." : "Saqlagach, kiritgan ma’lumotingiz jadval ko‘rinishida chiqadi — tekshirib, keyin yuborasiz."}</p>
         {chooser && !entryId && (
           <Button variant="outline" size="lg" disabled={pending} onClick={() => persist("draft", true)}>
             <Plus className="h-4 w-4" /> Saqlash va keyingi hududni kiritish
           </Button>
         )}
         <Button variant="success" size="lg" disabled={pending} onClick={() => persist("draft")}>
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Saqlash va jadvalni ko‘rish
+          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {adminSave ? "Saqlash" : "Saqlash va jadvalni ko‘rish"}
         </Button>
       </div>
     </form>

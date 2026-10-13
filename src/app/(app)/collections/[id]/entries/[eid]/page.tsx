@@ -5,7 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { displayValue, type CollectionRow, type EntryRow } from "@/lib/collections";
 import { fmtDateTime } from "@/lib/format";
-import { Badge, Card, CardBody, CardHeader, CardTitle, PageHeader } from "@/components/ui/primitives";
+import { buttonClass, Badge, Card, CardBody, CardHeader, CardTitle, PageHeader } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EntryReview } from "@/components/collections/entry-review";
 
@@ -42,7 +42,12 @@ export default async function EntryDetailPage({ params }: { params: Promise<{ id
       <div className="mb-4"><EntryReview entryId={e.id} actions={actions} /></div>
 
       <Card>
-        <CardHeader><CardTitle>Kiritilgan ma’lumot</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Kiritilgan ma’lumot</CardTitle>
+          {profile.role === "super_admin" && e.status !== "draft" && (
+            <Link href={`/collections/${col.id}/entries/${e.id}/edit`} className={buttonClass("outline", "sm")}>Tahrirlash</Link>
+          )}
+        </CardHeader>
         <CardBody>
           <dl>
             {col.fields.map((f) => {

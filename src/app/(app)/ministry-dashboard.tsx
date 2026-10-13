@@ -126,7 +126,7 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
       partial: showDistricts ? Math.max(0, x.dSent - x.dApproved) : x.pending ? 1 : 0,
       sub: showDistricts ? `${x.dSent}/${x.dTotal} tuman` : x.sent ? "yuborgan" : "yubormagan",
       extra: x.pdf ? <Badge tone="green">PDF bor</Badge> : x.sent ? <Badge tone="amber">PDF yo‘q</Badge> : <Badge tone="red">kutilmoqda</Badge>,
-      href: `/collections/${col.id}?region=${x.r.id}`,
+      href: `/malumotlar?c=${col.id}&region=${x.r.id}`,
     };
   });
 
@@ -235,7 +235,7 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
                 </Td>
                 <Td>{x.rating.accuracy === null ? <span className="text-slate-400">—</span> : <b className={x.rating.accuracy >= 90 ? "text-emerald-700" : x.rating.accuracy >= 70 ? "text-amber-700" : "text-red-700"}>{x.rating.accuracy}%</b>}</Td>
                 <Td className="whitespace-nowrap text-xs">{x.lastAt ? fmtDateTime(x.lastAt) : "—"}</Td>
-                <Td><Link href={`/collections/${col.id}?region=${x.r.id}`} className={buttonClass("outline", "sm")}>Ochish</Link></Td>
+                <Td><Link href={`/malumotlar?c=${col.id}&region=${x.r.id}`} className={buttonClass("outline", "sm")}>Jadval</Link></Td>
               </tr>
             ))}
           </tbody>

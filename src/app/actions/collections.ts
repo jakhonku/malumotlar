@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { collectionInputSchema, newYearTemplate } from "@/lib/collections";
+import { collectionInputSchema, newYearTemplate, validateAnswers, type CollectionRow } from "@/lib/collections";
 import { returnReasonSchema } from "@/lib/validators";
 
 type Result = { ok: boolean; id?: string; error?: string };
@@ -74,4 +74,23 @@ export async function reviewEntry(
   const { error } = await supabase.rpc("col_review", { p_entry: entryId, p_action: action, p_comment: comment?.trim() || null });
   if (error) return { ok: false, error: error.code === "P0001" ? error.message : "Amalni bajarib bo‘lmadi" };
   return { ok: true };
+}
+
+/** Administrator yuborilgan yozuvdagi ma'lumotni tahrirlaydi (holati o'zgarmaydi). */
+export async function adminUpdateEntry(
+  entryId: string,
+  answers: Record<string, unknown>,
+): Promise<{ ok: boolean; error?: string; fieldErrors?: Record<string, string> }> {
+  const me = await adminOnly();
+  if (!me) return { ok: false, error: "Bu amal faqat vazirlik administratori uchun" };
+  if (!/^[0-9a-f-]{36}$/i.test(entryId)) return { ok: false, error: "Yozuv noto‘g‘ri" };
+  const supabase = await createClient();
+  const { data: e } = await supabase.from("collection_entries").select("collection_id").eq("id", entryId).maybeSingle();
+  if (!e) return { ok: false, error: "Yozuv topilmadi" };
+  const { data: col } = await supabase.from("collections").select("*").eq("id", e.collection_id).maybeSingle();
+  if (!col) return { ok: false, error: "Ma’lumot yig‘ish topilmadi" };
+  const v = validateAnswers((col as CollectionRow).fields, answers, false);
+  if (!v.ok) return { ok: false, error: "Ba’zi maydonlar noto‘g‘ri to‘ldirilgan", fieldErrors: v.errors };
+  const { error } = await supabase.rpc("col_admin_update", { p_entry: entryId, p_answers: v.values });
+  return error ? { ok: false, error: error.message.includes("Qoralama") ? "Qoralamani tahrirlab bo‘lmaydi" : "Saqlab bo‘lmadi" } : { ok: true };
 }

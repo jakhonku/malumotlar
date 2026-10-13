@@ -128,9 +128,14 @@ export default async function IncomingPage({ searchParams }: { searchParams: Pro
                   </Td>
                   <Td className="whitespace-nowrap text-xs">{fmtDateTime(r.submitted_at)}</Td>
                   <Td>
-                    <Link href={`/collections/${col.id}/entries/${r.id}`} className={buttonClass(r.status === "submitted" ? "default" : "outline", "sm")}>
-                      {r.status === "submitted" ? "Tekshirish" : "Ochish"}
-                    </Link>
+                    <div className="flex gap-1">
+                      <Link href={`/collections/${col.id}/entries/${r.id}`} className={buttonClass(r.status === "submitted" ? "default" : "outline", "sm")}>
+                        {r.status === "submitted" ? "Tekshirish" : "Ochish"}
+                      </Link>
+                      {profile.role === "super_admin" && (
+                        <Link href={`/collections/${col.id}/entries/${r.id}/edit`} className={buttonClass("outline", "sm")}>Tahrirlash</Link>
+                      )}
+                    </div>
                   </Td>
                 </tr>
               ))}

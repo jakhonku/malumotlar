@@ -71,7 +71,7 @@ beforeAll(async () => {
     alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
     alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
   `);
-  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "migrations/0009_public_delete.sql", "migrations/0011_chat_and_hide_drafts.sql", "migrations/0013_edit_submitted.sql", "seed.sql"]) {
+  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "migrations/0009_public_delete.sql", "migrations/0011_chat_and_hide_drafts.sql", "migrations/0013_edit_submitted.sql", "migrations/0014_admin_edit.sql", "seed.sql"]) {
     await db.exec(sql(f));
   }
   await db.exec("grant all on all tables in schema public to service_role;");
@@ -620,6 +620,20 @@ describe("umumiy ma’lumot yig‘ish (collections)", () => {
     expect(reg.every((r) => r.region_id === samarqand)).toBe(true);
     expect(await fail(as(ids.admin, () => db.query("update collection_entries set status = 'approved'")))).toContain("permission denied");
     expect(await fail(as(ids.district, () => db.query("delete from collection_entries")))).toContain("permission denied");
+  });
+
+  it("administrator yuborilgan yozuvni tahrirlaydi (holat o‘zgarmaydi); boshqalar va qoralama — yo‘q", async () => {
+    const tk = hex("w");
+    const id = await save(colId, null, tk, null, geo({ answers: { nomi: "Eski" } }));
+    const upd = (uid: string) => as(uid, () => db.query("select public.col_admin_update($1, $2::jsonb)", [id, JSON.stringify({ nomi: "Admin tuzatdi", soni: 9 })]));
+    expect(await fail(upd(ids.admin))).toContain("Qoralamani");
+    await submit(colId, tk, id);
+    expect(await fail(upd(ids.region))).toContain("faqat vazirlik");
+    await upd(ids.admin);
+    const r = (await q("select status, answers from collection_entries where id = $1", [id]))[0];
+    expect(r.status).toBe("submitted");
+    expect((r.answers as { nomi: string }).nomi).toBe("Admin tuzatdi");
+    expect((await q("select 1 from audit_logs where action = 'collection.entry.admin_update' and entity_id = $1", [id])).length).toBe(1);
   });
 
   it("vazirlik (admin/kuzatuvchi) qoralamalarni ko‘rmaydi, egasi ko‘radi", async () => {
