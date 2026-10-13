@@ -125,7 +125,7 @@ export async function savePublicEntry(
   const col = await loadCollection(collectionId);
   if (!col) return { ok: false, error: "Ma’lumot yig‘ish topilmadi" };
 
-  const v = validateAnswers(col.fields, answers, mode === "draft");
+  const v = validateAnswers(col.fields, answers, false);
   if (!v.ok) return { ok: false, error: "Ba’zi maydonlar noto‘g‘ri to‘ldirilgan", fieldErrors: v.errors };
   if (mode === "draft" && Object.values(v.values).every((x) => x === null || x === false || (Array.isArray(x) && !x.length))) {
     return { ok: false, error: "Hech bo‘lmaganda bitta maydonni to‘ldiring" };

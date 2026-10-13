@@ -5,6 +5,7 @@ import {
 import ExcelJS from "exceljs";
 import { STATUS_LABELS } from "../constants";
 import { brandBlock } from "./brand";
+import { regionOrgName } from "../brand";
 import { autoWidths, pickFontSize, rowCanSplit } from "./layout";
 import { displayValue, type CollectionRow, type EntryRow } from "../collections";
 import type { District, Region } from "../types";
@@ -138,7 +139,7 @@ export async function buildCollectionDocx(
       const inRegion = entries.filter((e) => e.region_id === region.id);
       if (!inRegion.length && opts.emptyMode === "hide") continue;
       rendered++;
-      children.push(para(region.name.toUpperCase(), { bold: true, size: 28, align: AlignmentType.CENTER, before: 240, after: 120, keepNext: true }));
+      children.push(para(regionOrgName(region.name).toUpperCase(), { bold: true, size: 28, align: AlignmentType.CENTER, before: 240, after: 120, keepNext: true }));
 
       if (col.audience !== "district") {
         const own = inRegion.filter((e) => e.scope === "regional").sort(byCreated);

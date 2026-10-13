@@ -46,9 +46,11 @@ export async function getEntryGroup(collectionId: string, token: string): Promis
   };
 }
 
+import { regionOrgName } from "@/lib/brand";
+
 export const unitLabel = (g: Pick<EntryGroup, "regionName" | "districtName" | "scope" | "groupMode">) =>
   g.groupMode === "region"
-    ? `${g.regionName} — viloyat boshqarmasi (viloyat va barcha tuman/shaharlar)`
+    ? `${regionOrgName(g.regionName)} (hudud va barcha tuman/shaharlar)`
     : g.scope === "district" && g.districtName ? `${g.regionName} · ${g.districtName}` : `${g.regionName} (viloyatning o‘zi)`;
 
 /** Bitta yozuvning hududi (boshqarma rejimida har bir yozuv o‘z tumani bilan). */

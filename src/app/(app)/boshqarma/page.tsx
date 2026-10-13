@@ -8,6 +8,7 @@ import { getEntryGroup, isOpen } from "@/lib/public-collection";
 import { listSignedFiles } from "@/lib/signed-files";
 import type { CollectionRow } from "@/lib/collections";
 import { fmtDate } from "@/lib/format";
+import { regionOrgName } from "@/lib/brand";
 import { Badge, buttonClass, Card, CardBody, EmptyState, PageHeader } from "@/components/ui/primitives";
 
 interface DistMon { district_id: string; entries_total: number; draft: number; submitted: number; revision: number; approved: number; sent: boolean }
@@ -50,8 +51,8 @@ export default async function RegionPanel() {
   return (
     <>
       <PageHeader
-        title={`${region?.name ?? "Viloyat"} — boshqarma paneli`}
-        description={`${profile.full_name}. Viloyatingiz va unga tegishli barcha tuman/shaharlar ma’lumotini shu yerdan kiritasiz.`}
+        title={region?.name ? regionOrgName(region.name) : "Boshqarma paneli"}
+        description={`${profile.full_name}. Hududingiz va unga tegishli barcha tuman/shaharlar ma’lumotini shu yerdan kiritasiz.`}
       />
       {cards.length === 0 ? (
         <Card><EmptyState title="Hozircha ochiq ma’lumot yig‘ish yo‘q" text="Vazirlik yangi yig‘ishni ochganda shu yerda ko‘rinadi." /></Card>

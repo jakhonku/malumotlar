@@ -72,8 +72,8 @@ export function UnitPicker({
         {audience !== "regional" && <label className={choice(kind === "region")}>
           <input type="radio" name="kind" checked={kind === "region"} onChange={() => setKind("region")} className="mt-0.5 h-4 w-4 accent-blue-800" />
           <span>
-            <b className="block text-slate-900">Viloyat boshqarmasi — hammasini men to‘ldiraman</b>
-            Boshqarma boshlig‘i viloyat va unga tegishli barcha tuman/shaharlar ma’lumotini bitta joydan, bitta havola orqali kiritadi.
+            <b className="block text-slate-900">Madaniyat boshqarmasi (vazirlik) — hammasini men to‘ldiraman</b>
+            Boshqarma boshlig‘i o‘z hududi va unga tegishli barcha tuman/shaharlar ma’lumotini bitta joydan kiritadi.
           </span>
         </label>}
         {audience !== "regional" && <label className={choice(kind === "district")}>

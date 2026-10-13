@@ -166,7 +166,7 @@ export function DynamicForm({
             : { ...geo, scope: "district", district_id: sel };
       setGeoError(null);
     }
-    const check = validateAnswers(collection.fields, values as Record<string, unknown>, mode === "draft");
+    const check = validateAnswers(collection.fields, values as Record<string, unknown>, false);
     if (!check.ok) {
       setErrors(check.errors);
       toast.error("Ba’zi maydonlar to‘ldirilmagan yoki noto‘g‘ri");

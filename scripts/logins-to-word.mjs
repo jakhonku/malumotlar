@@ -10,6 +10,9 @@ const rows = readFileSync("viloyat-loginlar.csv", "utf8")
   .replace(/^﻿/, "").split(/\r?\n/).filter(Boolean).slice(1)
   .map((l) => l.split(";").map((c) => c.replace(/^"|"$/g, "")));
 
+const org = (n) => /^Qoraqalpog/i.test(n) ? "Qoraqalpog‘iston Respublikasi Madaniyat vazirligi" : /shahri$/i.test(n) ? n.replace(/\s*shahri$/i, "") + " shahar madaniyat boshqarmasi" : /viloyati$/i.test(n) ? n.replace(/\s*viloyati$/i, "") + " viloyat madaniyat boshqarmasi" : n;
+rows.forEach((r) => { r[0] = org(r[0]); });
+
 const t = (text, o = {}) => new TextRun({ text, font: FONT, size: o.size ?? 24, bold: o.bold, italics: o.italics });
 const p = (text, o = {}) => new Paragraph({ alignment: o.align, spacing: { after: o.after ?? 120, before: o.before ?? 0 }, children: [t(text, o)] });
 const b = { style: BorderStyle.SINGLE, size: 4, color: "000000" };
@@ -21,12 +24,12 @@ const cell = (text, w, o = {}) =>
     children: [new Paragraph({ alignment: o.center ? AlignmentType.CENTER : AlignmentType.LEFT, children: [t(text, { bold: o.head, size: o.size ?? 24 })] })],
   });
 
-const W = [600, 3600, 2200, 2400]; // jami 8800 (A4 portret)
+const W = [500, 4300, 1900, 2100]; // jami 8800 (A4 portret)
 const table = new Table({
   width: { size: W.reduce((a, c) => a + c, 0), type: WidthType.DXA },
   columnWidths: W,
   rows: [
-    new TableRow({ tableHeader: true, children: ["№", "Viloyat/hudud", "Login", "Parol"].map((h, i) => cell(h, W[i], { head: true, center: true })) }),
+    new TableRow({ tableHeader: true, children: ["№", "Tashkilot", "Login", "Parol"].map((h, i) => cell(h, W[i], { head: true, center: true })) }),
     ...rows.map((r, i) => new TableRow({ cantSplit: true, children: [cell(String(i + 1), W[0], { center: true }), cell(r[0], W[1]), cell(r[1], W[2], { size: 26 }), cell(r[2], W[3], { size: 26 })] })),
   ],
 });
@@ -35,7 +38,7 @@ const sheets = rows.flatMap((r) => [
   new Paragraph({ children: [new PageBreak()] }),
   p("O‘ZBEKISTON RESPUBLIKASI MADANIYAT VAZIRLIGI", { bold: true, align: AlignmentType.CENTER, size: 28 }),
   p("Madaniy-ommaviy tadbirlar va festivallarni tashkil etish bo‘limi", { italics: true, align: AlignmentType.CENTER, after: 360 }),
-  p(r[0], { bold: true, align: AlignmentType.CENTER, size: 32, after: 360 }),
+  p(r[0], { bold: true, align: AlignmentType.CENTER, size: 30, after: 360 }),
   p("Tadbirlar ma’lumotlarini yig‘ish tizimiga kirish ma’lumotlari", { align: AlignmentType.CENTER, after: 360 }),
   p(`Sayt:     ${SITE}`, { size: 26 }),
   p(`Login:    ${r[1]}`, { size: 30, bold: true }),

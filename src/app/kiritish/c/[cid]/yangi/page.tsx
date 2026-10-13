@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCollection, isOpen, UUID_RE } from "@/lib/public-collection";
+import { regionOrgName } from "@/lib/brand";
 import type { EntryGeo } from "@/app/actions/public";
 import { DynamicForm, type GeoChooser } from "@/components/collections/dynamic-form";
 
@@ -40,7 +41,7 @@ export default async function CollectionNewEntry({ params, searchParams }: { par
       .order("district_type", { ascending: false }).order("name").limit(500);
     geo.group_mode = "region";
     geo.scope = "regional";
-    label = `${region.name} — viloyat boshqarmasi (viloyat va barcha tuman/shaharlar)`;
+    label = `${regionOrgName(region.name)} (hudud va barcha tuman/shaharlar)`;
     chooser = { districts: ds ?? [], allowRegional: col.audience !== "district", initial: col.audience === "district" ? "" : "regional" };
   } else if (scope === "district") {
     const districtParam = one(sp.district);

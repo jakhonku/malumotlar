@@ -83,3 +83,13 @@ describe("Word: uzun ma’lumotli jadval", () => {
     }
   });
 });
+
+import { regionOrgName } from "@/lib/brand";
+describe("hududning rasmiy tashkilot nomi", () => {
+  it("viloyat, shahar va Qoraqalpog‘iston uchun to‘g‘ri nomlar", () => {
+    expect(regionOrgName("Andijon viloyati")).toBe("Andijon viloyat madaniyat boshqarmasi");
+    expect(regionOrgName("Farg‘ona viloyati")).toBe("Farg‘ona viloyat madaniyat boshqarmasi");
+    expect(regionOrgName("Toshkent shahri")).toBe("Toshkent shahar madaniyat boshqarmasi");
+    expect(regionOrgName("Qoraqalpog‘iston Respublikasi")).toBe("Qoraqalpog‘iston Respublikasi Madaniyat vazirligi");
+  });
+});
