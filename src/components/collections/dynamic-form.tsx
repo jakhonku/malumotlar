@@ -114,6 +114,8 @@ function FieldInput({
 export interface GeoChooser {
   districts: { id: string; name: string }[];
   allowRegional: boolean;
+  /** allaqachon yozuv kiritilgan hududlar ("regional" yoki tuman id) — ro‘yxatda ✓ bilan belgilanadi */
+  filled?: string[];
   /** boshlang‘ich tanlov: "regional" | tuman id | "" */
   initial: string;
 }
@@ -150,7 +152,7 @@ export function DynamicForm({
     });
   };
 
-  function persist(mode: "draft" | "submit") {
+  function persist(mode: "draft" | "submit", next = false) {
     setServerError(null);
     let useGeo: EntryGeo = geo;
     if (chooser) {
@@ -180,7 +182,7 @@ export function DynamicForm({
         return;
       }
       toast.success("Saqlandi. Endi jadvalni tekshirib, yuboring.");
-      router.push(`/kiritish/c/${collection.id}/t/${res.token}`);
+      router.push(`/kiritish/c/${collection.id}/t/${res.token}${next ? "/yangi" : ""}`);
       router.refresh();
     });
   }
@@ -198,8 +200,8 @@ export function DynamicForm({
             <Field label="Qaysi hudud uchun kiritilmoqda?" required error={geoError ?? undefined} className="md:col-span-2" hint="Har bir tuman/shahar uchun alohida yozuv kiritiladi.">
               <Select value={sel} onChange={(e) => { setSel(e.target.value); setGeoError(null); }} disabled={!!entryId}>
                 <option value="">Tanlang…</option>
-                {chooser.allowRegional && <option value="regional">Viloyatning o‘zi</option>}
-                {chooser.districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                {chooser.allowRegional && <option value="regional">{chooser.filled?.includes("regional") ? "✓ " : ""}Viloyatning o‘zi</option>}
+                {chooser.districts.map((d) => <option key={d.id} value={d.id}>{chooser.filled?.includes(d.id) ? "✓ " : ""}{d.name}</option>)}
                 <option value="__new__">➕ Ro‘yxatda yo‘q — nomini o‘zim yozaman</option>
               </Select>
             </Field>
@@ -239,6 +241,11 @@ export function DynamicForm({
 
       <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
         <p className="text-sm text-slate-600">Saqlagach, kiritgan ma’lumotingiz jadval ko‘rinishida chiqadi — tekshirib, keyin yuborasiz.</p>
+        {chooser && !entryId && (
+          <Button variant="outline" size="lg" disabled={pending} onClick={() => persist("draft", true)}>
+            <Plus className="h-4 w-4" /> Saqlash va keyingi hududni kiritish
+          </Button>
+        )}
         <Button variant="success" size="lg" disabled={pending} onClick={() => persist("draft")}>
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Saqlash va jadvalni ko‘rish
         </Button>

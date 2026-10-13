@@ -22,7 +22,8 @@ export default async function CollectionAddEntry({
     const { data: ds } = await createAdminClient()
       .from("districts").select("id,name").eq("region_id", group.regionId).eq("is_active", true)
       .order("district_type", { ascending: false }).order("name").limit(500);
-    chooser = { districts: ds ?? [], allowRegional: col.audience !== "district", initial: sp.unit ?? "" };
+    const filled = [...new Set(group.entries.map((e) => (e.scope === "regional" ? "regional" : (e.district_id ?? ""))))].filter(Boolean);
+    chooser = { districts: ds ?? [], allowRegional: col.audience !== "district", initial: sp.unit ?? "", filled };
   }
 
   return (
