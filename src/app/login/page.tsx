@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
@@ -36,12 +35,6 @@ export default async function LoginPage() {
             </p>
           )}
         </div>
-        <p className="mt-4 text-center text-sm text-slate-300">
-          Tadbir ma’lumotini kiritmoqchimisiz?{" "}
-          <Link href="/kiritish" className="font-semibold text-white underline underline-offset-4">
-            Login talab qilinmaydi — shu yerga o‘ting
-          </Link>
-        </p>
       </div>
     </main>
   );
