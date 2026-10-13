@@ -233,3 +233,17 @@ describe("Toshkent vaqti", () => {
     expect(dayLabel("2026-10-01T10:00:00Z", now)).toBe("01.10.2026");
   });
 });
+
+import { parentPath } from "../src/components/layout/back-button";
+describe("«Orqaga» manzillari", () => {
+  it("chuqur sahifalar to‘g‘ri ota sahifaga qaytadi", () => {
+    expect(parentPath("/collections/abc/entries/xyz")).toBe("/collections/abc");
+    expect(parentPath("/collections/abc/edit")).toBe("/collections/abc");
+    expect(parentPath("/collections/new")).toBe("/collections");
+    expect(parentPath("/kiritish/c/c1/t/tok")).toBe("/boshqarma");
+    expect(parentPath("/kiritish/c/c1/t/tok/yangi")).toBe("/kiritish/c/c1/t/tok");
+    expect(parentPath("/kiritish/c/c1/t/tok/e1")).toBe("/kiritish/c/c1/t/tok");
+    expect(parentPath("/kiritish/c/c1/yangi")).toBe("/boshqarma");
+    expect(parentPath("/events/123")).toBe("/events");
+  });
+});

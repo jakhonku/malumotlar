@@ -28,7 +28,6 @@ export default async function CollectionEditEntry({ params }: { params: Promise<
 
   return (
     <>
-      <Link href={`/kiritish/c/${col.id}/t/${token}`} className="mb-3 inline-block text-sm text-slate-600 hover:text-blue-800">← Hudud sahifasiga qaytish</Link>
       <h1 className="mb-4 text-2xl font-bold text-slate-900">{col.entry_label}ni tahrirlash</h1>
       {entry.status === "revision" && entry.review_comment && (
         <div role="alert" className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">

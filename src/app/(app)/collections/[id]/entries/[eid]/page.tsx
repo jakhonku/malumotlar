@@ -1,7 +1,6 @@
 import { regionKind, regionSelf } from "@/lib/brand";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { displayValue, type CollectionRow, type EntryRow } from "@/lib/collections";
@@ -28,9 +27,6 @@ export default async function EntryDetailPage({ params }: { params: Promise<{ id
 
   return (
     <>
-      <Link href={`/collections/${col.id}`} className="mb-3 inline-flex items-center gap-1 text-sm text-slate-600 hover:text-blue-800">
-        <ArrowLeft className="h-4 w-4" /> {col.title}
-      </Link>
       <PageHeader title={`${col.entry_label}: ${e.district?.name ?? e.region?.name}`} description={e.district?.name ? e.region?.name : regionSelf(e.region?.name ?? "")}>
         {e.scope === "regional" ? <Badge tone="blue">{regionKind(e.region?.name ?? "") === "respublika" ? "Respublika darajasi" : regionKind(e.region?.name ?? "") === "shahar" ? "Shahar darajasi" : "Viloyat darajasi"}</Badge> : <Badge>Tuman/shahar darajasi</Badge>}
         <StatusBadge status={e.status} />

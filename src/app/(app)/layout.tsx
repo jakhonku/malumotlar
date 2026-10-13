@@ -1,6 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
+import { BackButton } from "@/components/layout/back-button";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen">
       <Sidebar role={profile.role} fullName={profile.full_name} scopeLabel={scopeLabel} unread={unread ?? 0} chatUnread={chatUnread} />
       <main className="px-4 py-6 lg:ml-72 lg:px-8">
-        <div className="mx-auto max-w-7xl">{children}</div>
+        <div className="mx-auto max-w-7xl">
+          <BackButton />
+          {children}
+        </div>
       </main>
     </div>
   );

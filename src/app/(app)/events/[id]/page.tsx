@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getEvent } from "@/lib/queries";
@@ -43,9 +42,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   return (
     <>
-      <Link href="/events" className="mb-3 inline-flex items-center gap-1 text-sm text-slate-600 hover:text-blue-800">
-        <ArrowLeft className="h-4 w-4" /> Tadbirlar ro‘yxati
-      </Link>
       <PageHeader title={e.title} description={`${e.region?.name}${e.district?.name ? " · " + e.district.name : ""}`}>
         {(e as { source?: string }).source === "public" && <Badge tone="amber">Ochiq forma orqali kiritilgan</Badge>}
         <ScopeBadge scope={e.event_scope} />

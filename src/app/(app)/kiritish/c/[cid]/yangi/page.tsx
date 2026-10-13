@@ -66,7 +66,6 @@ export default async function CollectionNewEntry({ params, searchParams }: { par
 
   return (
     <>
-      <Link href={`/kiritish/c/${col.id}`} className="mb-3 inline-block text-sm text-slate-600 hover:text-blue-800">← Hududni qayta tanlash</Link>
       <h1 className="mb-1 text-2xl font-bold text-slate-900">{col.title}</h1>
       <p className="mb-5 text-sm text-slate-600">
         Ma’lumotni kiriting. Saqlagandan so‘ng hududingiz havolasi beriladi — u orqali {col.allow_multiple ? `boshqa ${col.entry_label.toLowerCase()}larni ham qo‘shish, ` : ""}tuzatish va yuborish mumkin.
