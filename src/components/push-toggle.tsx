@@ -25,7 +25,11 @@ export function PushToggle({ className = "" }: { className?: string }) {
       if (Notification.permission === "denied") return setState("denied");
       const reg = await navigator.serviceWorker.getRegistration("/sw.js");
       const sub = await reg?.pushManager.getSubscription();
-      setState(sub && Notification.permission === "granted" ? "on" : "off");
+      if (sub && Notification.permission === "granted") {
+        // obuna serverda ham borligini ta’minlaymiz (baza yangilangach o‘zi tiklanadi)
+        const res = await savePushSubscription(sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } });
+        setState(res.ok ? "on" : "off");
+      } else setState("off");
     })().catch(() => setState("unsupported"));
   }, []);
 

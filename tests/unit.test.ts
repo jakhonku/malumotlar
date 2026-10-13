@@ -220,3 +220,16 @@ describe("Word hisoboti", () => {
     void execFileSync;
   });
 });
+
+import { dayLabel, fmtDateTime, tzDay, tzTime } from "../src/lib/format";
+describe("Toshkent vaqti", () => {
+  it("UTC dan +5 soat va kun chegarasi to‘g‘ri", () => {
+    expect(fmtDateTime("2026-12-31T20:30:00Z")).toBe("01.01.2027 01:30");
+    expect(tzTime("2026-10-13T12:58:03Z")).toBe("17:58");
+    expect(tzDay("2026-12-31T19:00:00Z")).toBe("2027-01-01");
+    const now = new Date("2026-10-13T10:00:00Z");
+    expect(dayLabel("2026-10-13T02:00:00Z", now)).toBe("Bugun");
+    expect(dayLabel("2026-10-12T10:00:00Z", now)).toBe("Kecha");
+    expect(dayLabel("2026-10-01T10:00:00Z", now)).toBe("01.10.2026");
+  });
+});
