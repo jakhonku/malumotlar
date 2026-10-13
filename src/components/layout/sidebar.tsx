@@ -45,7 +45,7 @@ export function Sidebar({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const items = NAV.filter((n) => n.roles.includes(role));
-  const canCreate = role !== "observer" && role !== "region_manager";
+  const canCreate = role === "district_manager"; // vazirlik tadbirni o‘zi kiritmaydi — forma yaratib, hududlardan yig‘adi
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || (href !== "/events" && pathname.startsWith(href + "/")));
 

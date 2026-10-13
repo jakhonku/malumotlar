@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUp, Plus, Save, Trash2 } from "lucide-react";
 import { saveCollection } from "@/app/actions/collections";
 import { Button, Card, CardBody, CardHeader, CardTitle, Field, Input, Select, Textarea } from "@/components/ui/primitives";
 import {
-  AUDIENCE_LABELS, COLUMN_TYPE_LABELS, COLUMN_TYPES, FIELD_TYPE_LABELS, FIELD_TYPES, slugKey,
+  AUDIENCE_LABELS, autoArrangeFields, COLUMN_TYPE_LABELS, COLUMN_TYPES, FIELD_TYPE_LABELS, FIELD_TYPES, slugKey,
   type CollectionInput, type ColumnDef, type ColumnType, type FieldDef, type FieldType,
 } from "@/lib/collections";
 
@@ -32,6 +32,11 @@ interface DraftColumn {
   required: boolean;
   optionsText: string;
 }
+
+const SAMPLE: Record<FieldType, string> = {
+  text: "…", textarea: "…", number: "0", date: "01.01.2027", time: "10:00", phone: "+998 90 123 45 67",
+  select: "Variant", multiselect: "Variant, Variant", checkbox: "Ha", rows: "1) …\n2) …",
+};
 
 let uidCounter = 1;
 const toDraftCol = (c: ColumnDef): DraftColumn => ({
@@ -64,6 +69,8 @@ export function CollectionBuilder({ id, initial }: { id: string | null; initial:
   const [allowMultiple, setAllowMultiple] = useState(initial.allow_multiple);
   const [isActive, setIsActive] = useState(initial.is_active);
   const [deadline, setDeadline] = useState(initial.deadline ?? "");
+  // yangi formada ustunlar tartibini platforma o‘zi qo‘yadi; mavjud formada o‘zgartirilmaydi
+  const [autoOrder, setAutoOrder] = useState(id === null);
   const [fields, setFields] = useState<DraftField[]>(() => {
     if (!initial.fields.length) return [blankField()];
     const drafts = initial.fields.map(toDraft);
@@ -117,9 +124,17 @@ export function CollectionBuilder({ id, initial }: { id: string | null; initial:
       });
     return {
       title, description: description || undefined, entry_label: entryLabel, audience,
-      allow_multiple: allowMultiple, is_active: isActive, deadline: deadline || null, fields: out,
+      allow_multiple: allowMultiple, is_active: isActive, deadline: deadline || null, fields: autoOrder ? autoArrangeFields(out) : out,
     };
   }
+
+  const preview = (() => {
+    const list = fields.filter((f) => f.label.trim()).map((f) => ({
+      key: f.key ?? `u${f.uid}`, label: f.label.trim(), type: f.type,
+      notBefore: f.type === "date" && f.notBeforeUid ? (fields.find((x) => x.uid === f.notBeforeUid)?.key ?? `u${f.notBeforeUid}`) : undefined,
+    }));
+    return autoOrder ? autoArrangeFields(list) : list;
+  })();
 
   function save() {
     start(async () => {
@@ -145,18 +160,30 @@ export function CollectionBuilder({ id, initial }: { id: string | null; initial:
           <Field label="Bitta yozuv nomi" required hint="Masalan: Tadbir, Obyekt, Dastur">
             <Input value={entryLabel} onChange={(e) => setEntryLabel(e.target.value)} />
           </Field>
-          <Field label="Kim to‘ldiradi?" required>
-            <Select value={audience} onChange={(e) => setAudience(e.target.value as typeof audience)}>
-              {Object.entries(AUDIENCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </Select>
-          </Field>
+          <fieldset className="md:col-span-2">
+            <legend className="mb-1 text-sm font-medium text-slate-700">Ma’lumot kimlar haqida kerak? <span className="text-red-600">*</span></legend>
+            <p className="mb-2 text-xs text-slate-500">Ma’lumotni har doim viloyat madaniyat boshqarmasi o‘z panelidan kiritadi va vazirlikka yuboradi.</p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {(Object.entries(AUDIENCE_LABELS) as [typeof audience, string][]).map(([k, v]) => (
+                <label key={k} className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm ${audience === k ? "border-blue-800 bg-blue-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}>
+                  <input type="radio" name="audience" className="mt-0.5 h-4 w-4 accent-blue-800" checked={audience === k} onChange={() => setAudience(k)} />
+                  <span>
+                    <b className="block text-slate-900">{v}</b>
+                    <span className="text-xs text-slate-600">
+                      {k === "regional" ? "Har bir viloyat bitta yozuv kiritadi." : k === "both" ? "Tumanlar haqida ham ma’lumot kerak bo‘lsa — shuni tanlang. Viloyat boshqarmasi har bir tuman uchun alohida kiritadi." : "Faqat tuman va shaharlar bo‘yicha qatorlar."}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <Field label="Oxirgi muddat" hint="Muddat o‘tgach forma yopiladi (ixtiyoriy)">
             <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
           </Field>
           <div className="flex flex-col justify-end gap-2 text-sm">
             <label className="flex cursor-pointer items-center gap-2">
               <input type="checkbox" className="h-4 w-4 accent-blue-800" checked={allowMultiple} onChange={(e) => setAllowMultiple(e.target.checked)} />
-              Har bir hudud bir nechta yozuv kirita oladi
+              Bitta hudud bir nechta yozuv kirita oladi (odatda kerak emas — bir hudud = bitta qator)
             </label>
             <label className="flex cursor-pointer items-center gap-2">
               <input type="checkbox" className="h-4 w-4 accent-blue-800" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
@@ -247,6 +274,40 @@ export function CollectionBuilder({ id, initial }: { id: string | null; initial:
               </div>
             </div>
           ))}
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Jadval ko‘rinishi (avtomatik)</CardTitle>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input type="checkbox" className="h-4 w-4 accent-blue-800" checked={autoOrder} onChange={(e) => setAutoOrder(e.target.checked)} />
+            Ustunlar tartibini platforma o‘zi qo‘ysin
+          </label>
+        </CardHeader>
+        <CardBody>
+          <p className="mb-2 text-xs text-slate-600">
+            Word va Excel hisobotda ustun kengliklari matn uzunligiga qarab o‘zi moslanadi. Qisqa maydonlar oldinda, uzun va qatorli maydonlar oxirida turadi;
+            tugash sanasi har doim boshlanish sanasidan keyin keladi.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr>
+                  {["№", "Viloyat", ...(audience !== "regional" ? ["Tuman/shahar"] : []), ...preview.map((f) => f.label), "Holati"].map((h, i) => (
+                    <th key={`${h}-${i}`} className="whitespace-nowrap border border-slate-300 bg-slate-100 px-2 py-1.5 text-left font-semibold text-slate-700">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {["1", "Samarqand viloyati", ...(audience !== "regional" ? ["Urgut tumani"] : []), ...preview.map((f) => SAMPLE[f.type]), "Yuborilgan"].map((c, i) => (
+                    <td key={`${c}-${i}`} className="border border-slate-200 px-2 py-1.5 text-slate-500">{c}</td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </CardBody>
       </Card>
 

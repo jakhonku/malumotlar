@@ -246,3 +246,28 @@ describe("hisobotlar (Word / Excel)", () => {
     expect(ws.getRow(3).getCell(4).value).toBe("Urgut tumani");
   });
 });
+
+import { autoArrangeFields, eventTemplate, statsTemplate, type FieldType } from "../src/lib/collections";
+
+describe("jadval ustunlarini avtomatik tartiblash", () => {
+  const f = (key: string, type: FieldType, notBefore?: string) => ({ key, type, notBefore });
+  it("qisqa maydonlar oldinda, qatorli va uzun matn oxirida; tartib barqaror", () => {
+    const out = autoArrangeFields([f("a", "rows"), f("b", "text"), f("c", "textarea"), f("d", "number"), f("e", "text")]);
+    expect(out.map((x) => x.key)).toEqual(["b", "d", "e", "c", "a"]);
+  });
+  it("tugash sanasi boshlanish sanasidan keyin keladi", () => {
+    const out = autoArrangeFields([f("tugash", "date", "boshlanish"), f("manzil", "text"), f("boshlanish", "date")]);
+    const keys = out.map((x) => x.key);
+    expect(keys.indexOf("tugash")).toBeGreaterThan(keys.indexOf("boshlanish"));
+    expect(keys).toHaveLength(3);
+  });
+  it("shablonlar yaroqli va tugash sanasi bog‘langan", () => {
+    for (const t of [eventTemplate(), statsTemplate()]) {
+      expect(t.fields.length).toBeGreaterThan(3);
+      expect(t.allow_multiple).toBe(false);
+      const arranged = autoArrangeFields(t.fields);
+      expect(arranged.map((x) => x.key).sort()).toEqual(t.fields.map((x) => x.key).sort());
+    }
+    expect(validateAnswers(eventTemplate().fields, {}, false).ok).toBe(false);
+  });
+});

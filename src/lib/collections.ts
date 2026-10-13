@@ -82,9 +82,9 @@ export interface EntryRow {
 }
 
 export const AUDIENCE_LABELS = {
-  both: "Viloyat ham, tuman/shahar ham",
-  regional: "Faqat viloyatlar",
-  district: "Faqat tuman va shaharlar",
+  both: "Viloyat boshqarmasi va uning tuman/shaharlari",
+  regional: "Faqat viloyat boshqarmasi (tumanlarsiz)",
+  district: "Faqat tuman/shaharlar",
 } as const;
 
 const CYR: Record<string, string> = { ʻ: "", "‘": "", "’": "", "'": "", "`": "" };
@@ -358,6 +358,66 @@ export function newYearTemplate(): CollectionInput {
       }),
       f("Mas’ul ijrochi F.I.Sh.", "text", true),
       f("Mas’ul ijrochi lavozimi", "text", true),
+      f("Mas’ul ijrochi telefoni", "phone", true),
+    ],
+  };
+}
+
+
+/**
+ * Jadval ustunlari tartibini avtomatik tartiblaydi (qisqa maydonlar oldinda, uzun/qatorli maydonlar oxirda;
+ * tugash sanasi har doim boshlanish sanasidan keyin). Tartib barqaror: bir xil darajadagi maydonlar o‘z joyida qoladi.
+ */
+export function autoArrangeFields<T extends { key: string; type: FieldType; notBefore?: string }>(fields: T[]): T[] {
+  const rank = (f: T) => (f.type === "rows" ? 3 : f.type === "textarea" || f.type === "multiselect" ? 2 : 1);
+  const out = fields.map((f, i) => ({ f, i })).sort((a, b) => rank(a.f) - rank(b.f) || a.i - b.i).map((x) => x.f);
+  // bog‘liq sana: «notBefore» ko‘rsatgan maydondan keyin tursin
+  for (let guard = 0; guard < out.length; guard++) {
+    let moved = false;
+    for (let i = 0; i < out.length; i++) {
+      const dep = out[i].notBefore;
+      if (!dep) continue;
+      const j = out.findIndex((x) => x.key === dep);
+      if (j > i) {
+        const [f] = out.splice(i, 1);
+        out.splice(j, 0, f); // j endi bir oldinga surilgan: f aynan bog‘liq maydondan keyin tushadi
+        moved = true;
+        break;
+      }
+    }
+    if (!moved) break;
+  }
+  return out;
+}
+
+/** «Tadbir (umumiy)» shabloni — istalgan bayram, festival yoki aksiya uchun. */
+export function eventTemplate(): CollectionInput {
+  const f = (label: string, type: FieldType, required: boolean, extra: Partial<FieldDef> = {}): FieldDef => ({ key: slugKey(label), label, type, required, ...extra });
+  return {
+    title: "", description: "", entry_label: "Tadbir", audience: "both", allow_multiple: false, is_active: true, deadline: null,
+    fields: [
+      f("Tadbir nomi", "text", true),
+      f("O‘tkaziladigan manzil", "text", true),
+      f("Boshlanish sanasi", "date", true),
+      f("Tugash sanasi", "date", true, { notBefore: "boshlanish_sanasi" }),
+      f("Ishtirokchilar soni", "number", false),
+      f("Mas’ul ijrochi F.I.Sh.", "text", true),
+      f("Mas’ul ijrochi telefoni", "phone", true),
+    ],
+  };
+}
+
+/** «Statistika (sonlar)» shabloni — hududdagi muassasalar yoki ko‘rsatkichlar sonini yig‘ish uchun. */
+export function statsTemplate(): CollectionInput {
+  const f = (label: string, type: FieldType, required: boolean, extra: Partial<FieldDef> = {}): FieldDef => ({ key: slugKey(label), label, type, required, ...extra });
+  return {
+    title: "", description: "", entry_label: "Ko‘rsatkich", audience: "both", allow_multiple: false, is_active: true, deadline: null,
+    fields: [
+      f("Madaniyat markazlari soni", "number", true),
+      f("Kutubxonalar soni", "number", true),
+      f("Teatr va muzeylar soni", "number", true),
+      f("Izoh", "textarea", false),
+      f("Mas’ul ijrochi F.I.Sh.", "text", true),
       f("Mas’ul ijrochi telefoni", "phone", true),
     ],
   };
