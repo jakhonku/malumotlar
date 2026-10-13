@@ -50,6 +50,13 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
   const pending = group.entries.filter((e) => e.status === "draft" || e.status === "revision");
   const base = `/kiritish/c/${col.id}`;
   const label = col.entry_label;
+  const unfilled = regionMode ? checklist.length - filled : 0;
+  const uploadBlock =
+    group.entries.length === 0
+      ? "Avval ma’lumot kiriting va yuboring — shundan keyin imzolangan PDF ni yuborish mumkin bo‘ladi."
+      : pending.length > 0
+        ? `Hali yuborilmagan yozuvlar bor (${pending.length} ta). Avval hammasini «Yuborish» orqali yuboring, so‘ng imzolangan PDF ni yuklang.`
+        : null;
 
   return (
     <div className="space-y-5">
@@ -157,17 +164,25 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
         <CardHeader><CardTitle>Tasdiqlash: yuklab oling → imzolang → PDF yuboring</CardTitle></CardHeader>
         <CardBody className="space-y-4">
           <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-700">
-            <li>Yuqoridagi jadvalni tekshiring va <b>Word</b> (yoki Excel) ko‘rinishida yuklab oling.</li>
-            <li>Chop eting yoki elektron imzolang (rahbar imzosi, muhr), so‘ng <b>PDF</b> qiling.</li>
+            <li>Barcha tuman/shaharlar (va o‘zingiz) ma’lumotini platformada kiriting va <b>«Yuborish»</b> orqali yuboring.</li>
+            <li><b>Word</b> (yoki Excel) ko‘rinishida yuklab oling va chop eting.</li>
+            <li>Rahbar imzosi va muhr qo‘ying, <b>skanerlab PDF</b> qiling.</li>
             <li>Imzolangan PDF ni shu yerdan yuboring — vazirlik uni ko‘radi.</li>
           </ol>
+          {unfilled > 0 && (
+            <p className="rounded-md bg-amber-50 p-2 text-sm text-amber-900">Diqqat: hali ma’lumot kiritilmagan hudud/tuman: <b>{unfilled}</b> ta (yuqoridagi ro‘yxatga qarang).</p>
+          )}
           <div className="flex flex-wrap gap-2">
             <a href={exportHref("docx")} className={buttonClass("success", "lg")}><FileDown className="h-5 w-5" /> Word yuklab olish</a>
             <a href={exportHref("xlsx")} className={buttonClass("outline", "lg")}><FileSpreadsheet className="h-5 w-5" /> Excel yuklab olish</a>
           </div>
           <div className="border-t border-slate-200 pt-4">
             <p className="mb-2 text-sm font-medium text-slate-800">Imzolangan hujjatni (PDF) yuborish</p>
-            <SignedUpload collectionId={col.id} token={token} />
+            {uploadBlock ? (
+              <p role="status" className="rounded-md bg-amber-50 p-3 text-sm text-amber-900">{uploadBlock}</p>
+            ) : (
+              <SignedUpload collectionId={col.id} token={token} />
+            )}
             {files.length > 0 ? (
               <ul className="mt-3 space-y-1 text-sm">
                 {files.map((f) => (

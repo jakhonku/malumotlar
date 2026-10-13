@@ -33,6 +33,7 @@ export default async function CollectionResultsPage({ params, searchParams }: { 
   if (!colRaw) notFound();
   const col = colRaw as CollectionRow;
   const admin = profile.role === "super_admin";
+  const seesDrafts = profile.role === "region_manager"; // vazirlik qoralamalarni ko‘rmaydi
 
   const status = one(sp.status);
   const region = profile.role === "region_manager" ? (profile.region_id ?? "") : one(sp.region);
@@ -121,13 +122,13 @@ export default async function CollectionResultsPage({ params, searchParams }: { 
                 </summary>
                 {col.audience !== "regional" && (
                   <Table>
-                    <thead><tr><Th>Tuman/shahar</Th><Th>Holati</Th><Th>Yozuvlar</Th><Th>Kutilmoqda</Th><Th>Tasdiqlangan</Th><Th>Qaytarilgan</Th><Th>Qoralama</Th></tr></thead>
+                    <thead><tr><Th>Tuman/shahar</Th><Th>Holati</Th><Th>Yozuvlar</Th><Th>Kutilmoqda</Th><Th>Tasdiqlangan</Th><Th>Qaytarilgan</Th>{seesDrafts && <Th>Qoralama</Th>}</tr></thead>
                     <tbody>
                       {details.map((d) => (
                         <tr key={d.district_id}>
                           <Td className="font-medium">{d.district_name}</Td>
-                          <Td>{d.sent ? <Badge tone="green">Ma’lumot yuborilgan</Badge> : d.revision ? <Badge tone="amber">Qayta ishlashda</Badge> : d.draft ? <Badge tone="slate">Qoralama</Badge> : <Badge tone="red">Ma’lumot yuborilmagan</Badge>}</Td>
-                          <Td>{d.entries_total}</Td><Td>{d.submitted}</Td><Td>{d.approved}</Td><Td>{d.revision}</Td><Td>{d.draft}</Td>
+                          <Td>{d.sent ? <Badge tone="green">Ma’lumot yuborilgan</Badge> : d.revision ? <Badge tone="amber">Qayta ishlashda</Badge> : d.draft && seesDrafts ? <Badge tone="slate">Qoralama</Badge> : <Badge tone="red">Ma’lumot yuborilmagan</Badge>}</Td>
+                          <Td>{d.entries_total}</Td><Td>{d.submitted}</Td><Td>{d.approved}</Td><Td>{d.revision}</Td>{seesDrafts && <Td>{d.draft}</Td>}
                         </tr>
                       ))}
                     </tbody>
@@ -165,7 +166,7 @@ export default async function CollectionResultsPage({ params, searchParams }: { 
       <form className="mb-3 flex flex-wrap gap-2" method="get">
         <Select name="status" defaultValue={status} className="max-w-52" aria-label="Holati">
           <option value="">Barcha holatlar</option>
-          {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          {Object.entries(STATUS_LABELS).filter(([k]) => seesDrafts || k !== "draft").map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </Select>
         {profile.role !== "region_manager" && (
           <Select name="region" defaultValue={region} className="max-w-64" aria-label="Viloyat">

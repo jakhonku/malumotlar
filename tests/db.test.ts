@@ -71,7 +71,7 @@ beforeAll(async () => {
     alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
     alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
   `);
-  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "migrations/0009_public_delete.sql", "seed.sql"]) {
+  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "migrations/0009_public_delete.sql", "migrations/0011_chat_and_hide_drafts.sql", "seed.sql"]) {
     await db.exec(sql(f));
   }
   await db.exec("grant all on all tables in schema public to service_role;");
@@ -617,6 +617,19 @@ describe("umumiy ma’lumot yig‘ish (collections)", () => {
     expect(await fail(as(ids.district, () => db.query("delete from collection_entries")))).toContain("permission denied");
   });
 
+  it("vazirlik (admin/kuzatuvchi) qoralamalarni ko‘rmaydi, egasi ko‘radi", async () => {
+    const tk = hex("q");
+    const id = await save(colId, null, tk, null, geo({ answers: { nomi: "Faqat qoralama" } }));
+    const find = (uid: string) => as(uid, () => q("select id from collection_entries where id = $1", [id]));
+    expect(await find(ids.admin)).toHaveLength(0);
+    expect(await find(ids.observer)).toHaveLength(0);
+    expect(await find(ids.region)).toHaveLength(1);
+    await submit(colId, tk, id);
+    expect(await find(ids.admin)).toHaveLength(1);
+    await review(ids.admin, id, "return", "Tuzating");
+    expect(await find(ids.admin)).toHaveLength(1);
+  });
+
   it("monitoring: yuborgan va yubormagan tumanlar", async () => {
     const tk = hex("e");
     await submit(colId, tk, await save(colId, null, tk, null, geo({ answers: { nomi: "Monitoring uchun" } })));
@@ -710,5 +723,41 @@ describe("ochiq yozuvni o‘chirish", () => {
     const id2 = await svc(async () => (await q("select public.col_public_save($1,$2,null,'ip',null,$3::jsonb) as id", [col, tok, JSON.stringify({ scope: "regional", region_id: samarqand, answers: { nomi: "B" } })]))[0].id as string).catch(() => null);
     void id2;
     expect(await fail(as(ids.district, () => db.query("select public.col_public_delete($1,$2,$3,'ip')", [col, tok, id])))).toContain("permission denied");
+  });
+});
+
+describe("chat (admin ↔ viloyat boshqarmasi)", () => {
+  const send = (uid: string, thread: string | null, body: string) => as(uid, async () => (await q("select public.send_message($1,$2) as id", [thread, body]))[0].id as string);
+  const unread = (uid: string) => as(uid, () => q("select thread_key, n from chat_unread_by_thread()"));
+
+  it("admin alohida foydalanuvchiga yozadi, u o‘qiydi va javob beradi", async () => {
+    await send(ids.admin, ids.region, "Salom, ma’lumotni yuboring");
+    expect((await unread(ids.region)).find((r) => r.thread_key === ids.region)?.n).toBe(1);
+    expect(await unread(ids.admin)).toHaveLength(0);
+    const seen = await as(ids.region, () => q("select body from messages order by created_at"));
+    expect(seen.map((m) => m.body)).toContain("Salom, ma’lumotni yuboring");
+    await as(ids.region, () => db.query("select public.chat_mark_read($1)", [ids.region]));
+    expect((await unread(ids.region)).length).toBe(0);
+    await send(ids.region, ids.region, "Qabul qildim");
+    expect((await unread(ids.admin)).find((r) => r.thread_key === ids.region)?.n).toBe(1);
+  });
+
+  it("umumiy xabar barcha viloyat boshqarmalariga boradi, tuman va kuzatuvchiga emas", async () => {
+    await send(ids.admin, null, "Hammaga: muddat 25-dekabr");
+    for (const uid of [ids.region, ids.regionNoPerm]) {
+      expect((await as(uid, () => q("select body from messages where thread_user is null"))).length).toBe(1);
+      expect((await unread(uid)).find((r) => r.thread_key === "all")?.n).toBe(1);
+    }
+    expect(await as(ids.observer, () => q("select 1 from messages"))).toHaveLength(0);
+    expect(await as(ids.district, () => q("select 1 from messages"))).toHaveLength(0);
+  });
+
+  it("boshqa suhbatni ko‘rish va yozish yopiq; umumiy xabarni faqat admin yuboradi", async () => {
+    await send(ids.admin, ids.otherRegion, "Faqat sizga");
+    expect((await as(ids.region, () => q("select body from messages"))).map((m) => m.body)).not.toContain("Faqat sizga");
+    expect(await fail(send(ids.region, ids.otherRegion, "Soxta"))).toContain("Faqat vazirlik");
+    expect(await fail(send(ids.region, null, "Hammaga"))).toContain("Faqat vazirlik");
+    expect(await fail(send(ids.admin, ids.region, "   "))).toContain("1–4000");
+    expect(await fail(as(ids.region, () => db.query("insert into messages (thread_user, sender_id, body) values (null, $1, 'x')", [ids.region])))).toContain("permission denied");
   });
 });

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  Bell, ClipboardCheck, ClipboardList, FileText, History, LayoutDashboard, ListChecks, LogOut, Map, Menu,
+  Bell, ClipboardCheck, MessageSquare, ClipboardList, FileText, History, LayoutDashboard, ListChecks, LogOut, Map, Menu,
   Mic2, PlusCircle, Settings, Users, UserSquare2, X, Building2, MapPinned,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
@@ -21,6 +21,7 @@ const MINISTRY_REGION: Role[] = ["super_admin", "observer"];
 const NAV: NavItem[] = [
   { href: "/boshqarma", label: "Boshqarma paneli", icon: LayoutDashboard, roles: ["region_manager"] },
   { href: "/", label: "Bosh sahifa", icon: LayoutDashboard, roles: ["super_admin", "district_manager", "observer"] },
+  { href: "/chat", label: "Chat", icon: MessageSquare, roles: ["super_admin", "region_manager"] },
   { href: "/collections", label: "Ma’lumot yig‘ish", icon: ClipboardList, roles: ["super_admin", "observer", "region_manager"] },
   { href: "/events", label: "Barcha tadbirlar", icon: ListChecks, roles: ["super_admin", "district_manager", "observer"] },
   { href: "/events/regional", label: "Viloyat asosiy tadbirlari", icon: Building2, roles: MINISTRY_REGION },
@@ -36,8 +37,8 @@ const NAV: NavItem[] = [
 ];
 
 export function Sidebar({
-  role, fullName, scopeLabel, unread,
-}: { role: Role; fullName: string; scopeLabel: string; unread: number }) {
+  role, fullName, scopeLabel, unread, chatUnread = 0,
+}: { role: Role; fullName: string; scopeLabel: string; unread: number; chatUnread?: number }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const items = NAV.filter((n) => n.roles.includes(role));
@@ -69,6 +70,9 @@ export function Sidebar({
         >
           <n.icon className="h-4 w-4 shrink-0" />
           {n.label}
+          {n.href === "/chat" && chatUnread > 0 && (
+            <span className="ml-auto rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">{chatUnread > 99 ? "99+" : chatUnread}</span>
+          )}
         </Link>
       ))}
     </nav>

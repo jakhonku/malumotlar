@@ -231,14 +231,16 @@ export async function createSignedUpload(
   const admin = createAdminClient();
   const { data } = await admin
     .from("collection_entries")
-    .select("region_id,district_id,scope,group_mode")
+    .select("region_id,district_id,scope,group_mode,status")
     .eq("collection_id", collectionId)
     .eq("edit_token_hash", sha256(token))
     .is("deleted_at", null)
     .order("created_at")
-    .limit(1);
+    .limit(500);
   const first = data?.[0];
   if (!first) return { ok: false, error: "Havola noto‘g‘ri yoki hali ma’lumot kiritilmagan" };
+  if (data.some((e) => e.status === "draft" || e.status === "revision"))
+    return { ok: false, error: "Avval barcha yozuvlarni «Yuborish» orqali yuboring, so‘ng imzolangan PDF ni yuklang." };
   const unit = first.group_mode === "region" ? "boshqarma" : first.district_id ?? "viloyat";
   await ensureBucket();
   const path = signedPath(collectionId, first.region_id, unit);
