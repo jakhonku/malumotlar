@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { BellRing, BellOff } from "lucide-react";
 import { toast } from "sonner";
-import { removePushSubscription, savePushSubscription } from "@/app/actions/push";
+import { removePushSubscription, savePushSubscription, sendTestPush } from "@/app/actions/push";
 
 const KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
@@ -63,9 +63,18 @@ export function PushToggle({ className = "" }: { className?: string }) {
   if (state === "loading" || state === "unsupported") return null;
   if (state === "denied") return <p className={`text-xs text-slate-400 ${className}`}>Xabarnoma brauzer sozlamalarida bloklangan.</p>;
   return state === "on" ? (
-    <button type="button" onClick={disable} className={`flex w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-emerald-600/30 px-2 py-2 text-xs text-white hover:bg-emerald-600/50 ${className}`}>
-      <BellRing className="h-4 w-4" /> Push xabarnoma: yoqilgan
-    </button>
+    <div className={`flex gap-1 ${className}`}>
+      <button type="button" onClick={disable} className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-md bg-emerald-600/30 px-2 py-2 text-xs text-white hover:bg-emerald-600/50">
+        <BellRing className="h-4 w-4" /> Push: yoqilgan
+      </button>
+      <button
+        type="button"
+        onClick={async () => { const r = await sendTestPush(); (r.ok ? toast.success : toast.error)(r.message); }}
+        className="cursor-pointer rounded-md bg-white/10 px-2 py-2 text-xs text-white hover:bg-white/20"
+      >
+        Sinash
+      </button>
+    </div>
   ) : (
     <button type="button" onClick={enable} className={`flex w-full cursor-pointer items-center justify-center gap-1 rounded-md bg-amber-500 px-2 py-2 text-xs font-semibold text-slate-900 hover:bg-amber-400 ${className}`}>
       <BellOff className="h-4 w-4" /> Push xabarnomani yoqish
