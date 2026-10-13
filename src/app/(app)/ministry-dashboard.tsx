@@ -185,10 +185,10 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
 
       <div className="mb-6 grid gap-4 lg:grid-cols-[22rem_1fr]">
         <Card>
-          <CardHeader><CardTitle>Yozuvlar holati</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Qabul qilingan ma’lumotlar holati</CardTitle></CardHeader>
           <CardBody>
             <Donut
-              centerLabel="yozuv"
+              centerLabel="ma’lumot"
               slices={[
                 { label: "Tekshiruv kutmoqda", value: waiting, color: "#38bdf8" },
                 { label: "Tasdiqlangan", value: approved, color: "#059669" },
