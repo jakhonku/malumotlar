@@ -1,12 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
-import { Check, Copy, Send } from "lucide-react";
-import { submitPublicEvents } from "@/app/actions/public";
+import { Check, Copy } from "lucide-react";
 import { Button, Card, CardBody, Input } from "@/components/ui/primitives";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function LinkPanel({ token, base = "/kiritish" }: { token: string; base?: string }) {
   const [copied, setCopied] = useState(false);
@@ -42,34 +39,3 @@ export function LinkPanel({ token, base = "/kiritish" }: { token: string; base?:
 }
 
 /** eventId bo‘lsa — bitta tadbirni, bo‘lmasa havoladagi barcha tayyor tadbirlarni yuboradi. */
-export function SubmitButton({
-  token, eventId, label, count, variant = "success",
-}: { token: string; eventId: string | null; label: string; count?: number; variant?: "success" | "outline" }) {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [, start] = useTransition();
-  return (
-    <>
-      <Button variant={variant} size={eventId ? "sm" : "default"} onClick={() => setOpen(true)}>
-        <Send className="h-4 w-4" /> {label}
-      </Button>
-      <ConfirmDialog
-        open={open}
-        title={label}
-        description={
-          eventId
-            ? "Yuborilgandan so‘ng tadbirni qaytarilmaguncha tahrirlab bo‘lmaydi. Davom etasizmi?"
-            : `${count ?? ""} ta tadbir vazirlikka yuboriladi va qaytarilmaguncha tahrirlab bo‘lmaydi. Davom etasizmi?`
-        }
-        confirmLabel="Ha, yuborish"
-        onClose={() => setOpen(false)}
-        onConfirm={async () => {
-          const res = await submitPublicEvents(token, eventId);
-          if (!res.ok) return res.error ?? "Xatolik yuz berdi";
-          toast.success(res.sent && res.sent > 1 ? `${res.sent} ta tadbir yuborildi` : "Ma’lumot yuborildi");
-          start(() => router.refresh());
-        }}
-      />
-    </>
-  );
-}

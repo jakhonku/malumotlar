@@ -39,10 +39,6 @@ export default async function PublicLanding() {
           ))}
         </div>
       )}
-
-      <p className="text-xs text-slate-500">
-        Eski «Yangi yil tadbirlari» standart formasi: <Link href="/kiritish/standart" className="underline">shu yerda</Link>.
-      </p>
     </div>
   );
 }

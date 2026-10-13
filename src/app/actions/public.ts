@@ -31,6 +31,8 @@ function dbMessage(error: { code?: string; message: string }): string {
   return "Server xatosi yuz berdi. Birozdan so‘ng qayta urinib ko‘ring.";
 }
 
+/** Eski «Yangi yil tadbirlari» ochiq formasi yopilgan — ma’lumot faqat «Ma’lumot yig‘ish» orqali olinadi. */
+const LEGACY_FORM_CLOSED = true;
 const TOKEN_RE = /^[0-9a-f]{48}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -46,6 +48,7 @@ export async function savePublicEvent(
   values: EventFormValues,
   mode: "draft" | "validate" | "submit",
 ): Promise<PublicSaveResult> {
+  if (LEGACY_FORM_CLOSED) return { ok: false, error: "Bu forma yopilgan. Ma’lumotni /kiritish sahifasidagi ochiq yig‘ishlar orqali kiriting." };
   if (token && !TOKEN_RE.test(token)) return { ok: false, error: "Hudud havolasi noto‘g‘ri" };
   if (eventId && !UUID_RE.test(eventId)) return { ok: false, error: "Tadbir noto‘g‘ri" };
 
@@ -78,6 +81,7 @@ export async function savePublicEvent(
 
 /** Tadbirni (yoki eventId bo‘lmasa — havoladagi barcha tayyor tadbirlarni) yuborish. */
 export async function submitPublicEvents(token: string, eventId: string | null): Promise<{ ok: boolean; sent?: number; error?: string }> {
+  if (LEGACY_FORM_CLOSED) return { ok: false, error: "Bu forma yopilgan." };
   if (!TOKEN_RE.test(token)) return { ok: false, error: "Hudud havolasi noto‘g‘ri" };
   if (eventId && !UUID_RE.test(eventId)) return { ok: false, error: "Tadbir noto‘g‘ri" };
   const { data, error } = await createAdminClient().rpc("public_submit_event", {

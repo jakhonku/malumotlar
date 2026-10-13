@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { displayValue } from "@/lib/collections";
 import { Badge, buttonClass, Card, CardHeader, CardTitle, Table, Td, Th } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { LinkPanel } from "@/app/kiritish/t/[token]/token-panel";
+import { LinkPanel } from "./link-panel";
 import { EntrySubmit } from "@/components/collections/entry-submit";
 import { EntryDelete } from "@/components/collections/entry-delete";
 import { SignedUpload } from "@/components/collections/signed-upload";
