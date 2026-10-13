@@ -8,7 +8,7 @@ import { getEntryGroup, isOpen } from "@/lib/public-collection";
 import { listSignedFiles } from "@/lib/signed-files";
 import type { CollectionRow } from "@/lib/collections";
 import { fmtDate } from "@/lib/format";
-import { regionOrgName } from "@/lib/brand";
+import { regionOrgName, regionSelf } from "@/lib/brand";
 import { Badge, buttonClass, Card, CardBody, EmptyState, PageHeader } from "@/components/ui/primitives";
 
 interface DistMon { district_id: string; entries_total: number; draft: number; submitted: number; revision: number; approved: number; sent: boolean }
@@ -92,7 +92,7 @@ export default async function RegionPanel() {
 
                   <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-700">
                     {c.audience !== "district" && (
-                      <span>Viloyatning o‘zi: <b>{ownCount ? (ownSent ? "yuborilgan" : "yuborilmagan") : "kiritilmagan"}</b></span>
+                      <span>{regionSelf(region?.name ?? "")}: <b>{ownCount ? (ownSent ? "yuborilgan" : "yuborilmagan") : "kiritilmagan"}</b></span>
                     )}
                     {c.audience !== "regional" && <span>Qoralamada: <b>{districtsDraft}</b></span>}
                     {returned > 0 && <span className="font-medium text-amber-700">Qaytarilgan: {returned} (tuzatish kerak)</span>}

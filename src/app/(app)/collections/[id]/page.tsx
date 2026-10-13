@@ -1,3 +1,4 @@
+import { regionKind, regionSelf } from "@/lib/brand";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronDown, ExternalLink, Pencil } from "lucide-react";
@@ -68,7 +69,7 @@ export default async function CollectionResultsPage({ params, searchParams }: { 
   const signed = await listSignedFiles(col.id, region ? { regionId: region } : undefined).catch(() => []);
   const dIds = signed.map((f) => f.unit).filter((u) => /^[0-9a-f-]{36}$/.test(u));
   const { data: dn } = dIds.length ? await supabase.from("districts").select("id,name").in("id", dIds) : { data: [] };
-  const unitName = (u: string) => (u === "viloyat" ? "Viloyatning o‘zi" : u === "boshqarma" ? "Viloyat boshqarmasi (viloyat va tumanlar)" : (dn ?? []).find((d) => d.id === u)?.name ?? "Tuman");
+  const unitName = (u: string, rid?: string) => (u === "viloyat" ? regionSelf(regions.find((r) => r.id === rid)?.name ?? "") : u === "boshqarma" ? "Madaniyat boshqarmasi (hudud va tumanlar)" : (dn ?? []).find((d) => d.id === u)?.name ?? "Tuman");
 
   const preview = col.fields.slice(0, 3);
   const qs = (patch: Record<string, string>) => {
@@ -149,7 +150,7 @@ export default async function CollectionResultsPage({ params, searchParams }: { 
               {signed.map((f) => (
                 <tr key={f.path}>
                   <Td className="font-medium">{regions.find((r) => r.id === f.regionId)?.name ?? "—"}</Td>
-                  <Td>{unitName(f.unit)}</Td>
+                  <Td>{unitName(f.unit, f.regionId)}</Td>
                   <Td className="whitespace-nowrap">{fmtDateTime(f.uploadedAt.toISOString())}</Td>
                   <Td>{f.size ? `${(f.size / 1024 / 1024).toFixed(1)} MB` : "—"}</Td>
                   <Td><a href={f.url} target="_blank" rel="noreferrer" className={buttonClass("outline", "sm")}>PDF ni ochish</a></Td>

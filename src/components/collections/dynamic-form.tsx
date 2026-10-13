@@ -114,6 +114,8 @@ function FieldInput({
 export interface GeoChooser {
   districts: { id: string; name: string }[];
   allowRegional: boolean;
+  /** «Viloyatning o‘zi» yozuvi (hudud turiga qarab) */
+  selfLabel?: string;
   /** allaqachon yozuv kiritilgan hududlar ("regional" yoki tuman id) — ro‘yxatda ✓ bilan belgilanadi */
   filled?: string[];
   /** boshlang‘ich tanlov: "regional" | tuman id | "" */
@@ -200,7 +202,7 @@ export function DynamicForm({
             <Field label="Qaysi hudud uchun kiritilmoqda?" required error={geoError ?? undefined} className="md:col-span-2" hint="Har bir tuman/shahar uchun alohida yozuv kiritiladi.">
               <Select value={sel} onChange={(e) => { setSel(e.target.value); setGeoError(null); }} disabled={!!entryId}>
                 <option value="">Tanlang…</option>
-                {chooser.allowRegional && <option value="regional">{chooser.filled?.includes("regional") ? "✓ " : ""}Viloyatning o‘zi</option>}
+                {chooser.allowRegional && <option value="regional">{chooser.filled?.includes("regional") ? "✓ " : ""}{chooser.selfLabel ?? "Viloyatning o‘zi"}</option>}
                 {chooser.districts.map((d) => <option key={d.id} value={d.id}>{chooser.filled?.includes(d.id) ? "✓ " : ""}{d.name}</option>)}
                 <option value="__new__">➕ Ro‘yxatda yo‘q — nomini o‘zim yozaman</option>
               </Select>

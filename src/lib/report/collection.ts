@@ -5,7 +5,7 @@ import {
 import ExcelJS from "exceljs";
 import { STATUS_LABELS } from "../constants";
 import { brandBlock } from "./brand";
-import { regionOrgName } from "../brand";
+import { regionOrgName, regionKind } from "../brand";
 import { autoWidths, pickFontSize, rowCanSplit } from "./layout";
 import { displayValue, type CollectionRow, type EntryRow } from "../collections";
 import type { District, Region } from "../types";
@@ -144,7 +144,7 @@ export async function buildCollectionDocx(
       if (col.audience !== "district") {
         const own = inRegion.filter((e) => e.scope === "regional").sort(byCreated);
         if (own.length || opts.emptyMode === "mark") {
-          children.push(para("Viloyatning o‘z ma’lumotlari", { bold: true, size: 26, before: 120, after: 80, keepNext: true }));
+          children.push(para(regionKind(region.name) === "respublika" ? "Respublikaning o‘z ma’lumotlari" : regionKind(region.name) === "shahar" ? "Shaharning o‘z ma’lumotlari" : "Viloyatning o‘z ma’lumotlari", { bold: true, size: 26, before: 120, after: 80, keepNext: true }));
           children.push(own.length ? tbl(own) : para(EMPTY_TEXT, { italics: true, size: 24, after: 80 }));
         }
       }

@@ -46,13 +46,13 @@ export async function getEntryGroup(collectionId: string, token: string): Promis
   };
 }
 
-import { regionOrgName } from "@/lib/brand";
+import { regionOrgName, regionSelf, regionSelfLabel } from "@/lib/brand";
 
 export const unitLabel = (g: Pick<EntryGroup, "regionName" | "districtName" | "scope" | "groupMode">) =>
   g.groupMode === "region"
     ? `${regionOrgName(g.regionName)} (hudud va barcha tuman/shaharlar)`
-    : g.scope === "district" && g.districtName ? `${g.regionName} · ${g.districtName}` : `${g.regionName} (viloyatning o‘zi)`;
+    : g.scope === "district" && g.districtName ? `${g.regionName} · ${g.districtName}` : regionSelfLabel(g.regionName);
 
 /** Bitta yozuvning hududi (boshqarma rejimida har bir yozuv o‘z tumani bilan). */
 export const entryUnit = (e: Pick<EntryRow, "scope" | "region" | "district">) =>
-  e.scope === "district" && e.district?.name ? e.district.name : "Viloyatning o‘zi";
+  e.scope === "district" && e.district?.name ? e.district.name : regionSelf(e.region?.name ?? "");

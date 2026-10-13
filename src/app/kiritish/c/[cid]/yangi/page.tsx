@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCollection, isOpen, UUID_RE } from "@/lib/public-collection";
-import { regionOrgName } from "@/lib/brand";
+import { regionOrgName, regionSelfLabel, regionSelf } from "@/lib/brand";
 import type { EntryGeo } from "@/app/actions/public";
 import { DynamicForm, type GeoChooser } from "@/components/collections/dynamic-form";
 
@@ -33,7 +33,7 @@ export default async function CollectionNewEntry({ params, searchParams }: { par
   if (!region) redirect(`/kiritish/c/${col.id}`);
 
   const geo: EntryGeo = { scope, region_id: region.id, district_id: "" };
-  let label = `${region.name} (viloyatning o‘zi)`;
+  let label = regionSelfLabel(region.name);
   let chooser: GeoChooser | undefined;
   if (regionMode) {
     const { data: ds } = await admin
@@ -42,7 +42,7 @@ export default async function CollectionNewEntry({ params, searchParams }: { par
     geo.group_mode = "region";
     geo.scope = "regional";
     label = `${regionOrgName(region.name)} (hudud va barcha tuman/shaharlar)`;
-    chooser = { districts: ds ?? [], allowRegional: col.audience !== "district", initial: col.audience === "district" ? "" : "regional" };
+    chooser = { districts: ds ?? [], allowRegional: col.audience !== "district", selfLabel: regionSelf(region.name), initial: col.audience === "district" ? "" : "regional" };
   } else if (scope === "district") {
     const districtParam = one(sp.district);
     if (districtParam === "__new__") {

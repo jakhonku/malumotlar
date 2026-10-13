@@ -1,3 +1,4 @@
+import { regionSelf } from "@/lib/brand";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -38,7 +39,7 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
       const list = all.filter(pred);
       return { count: list.length, sent: list.filter((e) => e.status === "submitted" || e.status === "approved").length };
     };
-    if (col.audience !== "district") checklist.push({ key: "regional", name: "Viloyatning o‘zi", unit: "regional", ...stat((e) => e.scope === "regional") });
+    if (col.audience !== "district") checklist.push({ key: "regional", name: regionSelf(group.regionName), unit: "regional", ...stat((e) => e.scope === "regional") });
     for (const d of ds ?? []) checklist.push({ key: d.id, name: d.name, unit: d.id, ...stat((e) => e.district_id === d.id) });
     if (col.audience === "regional") checklist = [];
   }

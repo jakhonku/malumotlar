@@ -1,4 +1,5 @@
 "use client";
+import { regionKind, regionSelf } from "@/lib/brand";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -21,10 +22,14 @@ export function UnitPicker({
   const [type, setType] = useState<"tuman" | "shahar">("tuman");
   const [error, setError] = useState<string | null>(null);
 
+  const regionName = regions.find((r) => r.id === region)?.name ?? "";
+  const selfName = region ? regionSelf(regionName) : "Hududning o‘zi";
+  const selfHint = !region ? "Hudud miqyosidagi asosiy tadbirlar." : regionKind(regionName) === "respublika" ? "Respublika miqyosidagi asosiy tadbirlar (masalan, Nukus shahridagi bayram konserti)." : regionKind(regionName) === "shahar" ? "Shahar miqyosidagi asosiy tadbirlar." : "Viloyat miqyosidagi asosiy tadbirlar (masalan, viloyat markazidagi bayram konserti).";
+
   const options = useMemo(() => districts.filter((d) => d.region_id === region), [districts, region]);
 
   function go() {
-    if (!region) return setError("Viloyatni tanlang");
+    if (!region) return setError("Hududni tanlang");
     const p = new URLSearchParams({ region });
     if (kind === "region") {
       p.set("mode", "region");
@@ -53,7 +58,7 @@ export function UnitPicker({
 
   return (
     <div className="space-y-4">
-      <Field label="1. Viloyat/hudud" required>
+      <Field label="1. Hudud (viloyat, Qoraqalpog‘iston Respublikasi yoki Toshkent shahri)" required>
         <Select value={region} onChange={(e) => { setRegion(e.target.value); setDistrict(""); setError(null); }}>
           <option value="">Tanlang…</option>
           {regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -65,8 +70,8 @@ export function UnitPicker({
         {audience !== "district" && <label className={choice(kind === "regional")}>
           <input type="radio" name="kind" checked={kind === "regional"} onChange={() => setKind("regional")} className="mt-0.5 h-4 w-4 accent-blue-800" />
           <span>
-            <b className="block text-slate-900">Viloyatning o‘zi</b>
-            Viloyat miqyosidagi asosiy tadbirlar (masalan, viloyat markazidagi bayram konserti).
+            <b className="block text-slate-900">{selfName}</b>
+            {selfHint}
           </span>
         </label>}
         {audience !== "regional" && <label className={choice(kind === "region")}>
@@ -89,7 +94,7 @@ export function UnitPicker({
         <div className="space-y-3">
           <Field label="3. Tuman/shahar" required>
             <Select value={district} onChange={(e) => { setDistrict(e.target.value); setError(null); }} disabled={!region}>
-              <option value="">{region ? "Tanlang…" : "Avval viloyatni tanlang"}</option>
+              <option value="">{region ? "Tanlang…" : "Avval hududni tanlang"}</option>
               {options.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               {region && <option value={NEW}>➕ Ro‘yxatda yo‘q — nomini o‘zim yozaman</option>}
             </Select>

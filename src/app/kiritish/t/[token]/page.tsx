@@ -1,3 +1,4 @@
+import { regionSelf } from "@/lib/brand";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarDays, MapPin, Phone, Plus } from "lucide-react";
@@ -26,7 +27,7 @@ export default async function PublicUnitPage({ params }: { params: Promise<{ tok
           {group.regionName}
           {group.districtName ? ` · ${group.districtName}` : ""}
         </h1>
-        <p className="text-sm text-slate-600">{group.scope === "regional" ? "Viloyatning o‘z tadbirlari" : "Tuman/shahar tadbirlari"}</p>
+        <p className="text-sm text-slate-600">{group.scope === "regional" ? `${regionSelf(group.regionName)} — tadbirlar` : "Tuman/shahar tadbirlari"}</p>
       </div>
 
       <LinkPanel token={token} />

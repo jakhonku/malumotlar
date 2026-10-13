@@ -1,3 +1,4 @@
+import { regionSelf } from "@/lib/brand";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
@@ -23,7 +24,7 @@ export default async function CollectionAddEntry({
       .from("districts").select("id,name").eq("region_id", group.regionId).eq("is_active", true)
       .order("district_type", { ascending: false }).order("name").limit(500);
     const filled = [...new Set(group.entries.map((e) => (e.scope === "regional" ? "regional" : (e.district_id ?? ""))))].filter(Boolean);
-    chooser = { districts: ds ?? [], allowRegional: col.audience !== "district", initial: sp.unit ?? "", filled };
+    chooser = { districts: ds ?? [], allowRegional: col.audience !== "district", selfLabel: regionSelf(group.regionName), initial: sp.unit ?? "", filled };
   }
 
   return (

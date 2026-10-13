@@ -1,3 +1,4 @@
+import { regionSelf } from "@/lib/brand";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
@@ -18,6 +19,7 @@ export default async function CollectionEditEntry({ params }: { params: Promise<
       ? {
           districts: entry.district_id ? [{ id: entry.district_id, name: entry.district?.name ?? "" }] : [],
           allowRegional: true,
+          selfLabel: regionSelf(group.regionName),
           initial: entry.scope === "regional" ? "regional" : (entry.district_id ?? ""),
         }
       : undefined;
