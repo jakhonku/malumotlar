@@ -71,7 +71,7 @@ beforeAll(async () => {
     alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
     alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
   `);
-  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "seed.sql"]) {
+  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "migrations/0009_public_delete.sql", "seed.sql"]) {
     await db.exec(sql(f));
   }
   await db.exec("grant all on all tables in schema public to service_role;");
@@ -690,5 +690,25 @@ describe("viloyat boshqarmasi rejimi (bitta havola — viloyat va barcha tumanla
     await save(colId, null, t, null, { scope: "district", region_id: samarqand, district_id: urgut, answers: { nomi: "A" } });
     const id = await save(colId, t, null, null, { scope: "district", region_id: samarqand, district_id: jomboy, answers: { nomi: "B" } });
     expect((await q("select district_id, group_mode from collection_entries where id = $1", [id]))[0]).toMatchObject({ district_id: urgut, group_mode: "unit" });
+  });
+});
+
+describe("ochiq yozuvni o‘chirish", () => {
+  const tok = ("dl" + "x").repeat(32).slice(0, 64);
+  const svc = async <T,>(fn: () => Promise<T>) => {
+    await db.exec("set role service_role");
+    try { return await fn(); } finally { await db.exec("reset role"); }
+  };
+  it("qoralamani o‘chiradi; yuborilganni, begona havolani va anon chaqiruvini rad etadi", async () => {
+    const fields = JSON.stringify([{ key: "nomi", label: "Nomi", type: "text", required: true }]);
+    const col = (await q("insert into collections (title, fields) values ('O‘chirish sinovi', $1::jsonb) returning id", [fields]))[0].id as string;
+    const mk = async () => svc(async () => (await q("select public.col_public_save($1,null,$2,'ip',null,$3::jsonb) as id", [col, tok, JSON.stringify({ scope: "regional", region_id: samarqand, answers: { nomi: "A" } })]))[0].id as string);
+    const id = await mk();
+    expect(await fail(svc(() => db.query("select public.col_public_delete($1,$2,$3,'ip')", [col, "z".repeat(64), id])))).toContain("noto'g'ri");
+    await svc(() => db.query("select public.col_public_delete($1,$2,$3,'ip')", [col, tok, id]));
+    expect((await q("select deleted_at from collection_entries where id = $1", [id]))[0].deleted_at).not.toBeNull();
+    const id2 = await svc(async () => (await q("select public.col_public_save($1,$2,null,'ip',null,$3::jsonb) as id", [col, tok, JSON.stringify({ scope: "regional", region_id: samarqand, answers: { nomi: "B" } })]))[0].id as string).catch(() => null);
+    void id2;
+    expect(await fail(as(ids.district, () => db.query("select public.col_public_delete($1,$2,$3,'ip')", [col, tok, id])))).toContain("permission denied");
   });
 });

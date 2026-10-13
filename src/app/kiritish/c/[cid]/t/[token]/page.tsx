@@ -4,10 +4,11 @@ import { Plus } from "lucide-react";
 import { entryUnit, getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { displayValue } from "@/lib/collections";
-import { Badge, buttonClass, Card, CardBody, CardHeader, CardTitle, Table, Td, Th } from "@/components/ui/primitives";
+import { Badge, buttonClass, Card, CardHeader, CardTitle, Table, Td, Th } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { LinkPanel } from "@/app/kiritish/t/[token]/token-panel";
 import { EntrySubmit } from "@/components/collections/entry-submit";
+import { EntryDelete } from "@/components/collections/entry-delete";
 
 export const dynamic = "force-dynamic";
 
@@ -82,50 +83,64 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
         </Card>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        {open && (col.allow_multiple || regionMode) && (
-          <Link href={`${base}/t/${token}/yangi`} className={buttonClass("default")}><Plus className="h-4 w-4" /> Yana {label.toLowerCase()} qo‘shish</Link>
-        )}
-        {open && pending.length > 1 && <EntrySubmit collectionId={col.id} token={token} entryId={null} count={pending.length} label={`Hammasini yuborish (${pending.length})`} />}
-        <span className="text-sm text-slate-600">Jami: <b>{group.entries.length}</b> · yuborilmagan: <b>{pending.length}</b></span>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Kiritilgan ma’lumotlar jadvali</CardTitle>
+          <span className="text-sm text-slate-600">Jami: <b>{group.entries.length}</b> · yuborilmagan: <b>{pending.length}</b></span>
+        </CardHeader>
+        <Table>
+          <thead>
+            <tr>
+              <Th>№</Th>
+              {regionMode && <Th>Hudud</Th>}
+              {col.fields.map((f) => <Th key={f.key}>{f.label}</Th>)}
+              <Th>Holati</Th>
+              <Th><span className="sr-only">Amal</span></Th>
+            </tr>
+          </thead>
+          <tbody>
+            {group.entries.map((e, i) => {
+              const editable = open && (e.status === "draft" || e.status === "revision");
+              return (
+                <tr key={e.id} className="hover:bg-slate-50">
+                  <Td className="text-slate-500">{i + 1}</Td>
+                  {regionMode && <Td className="whitespace-nowrap font-medium">{entryUnit(e)}</Td>}
+                  {col.fields.map((f) => (
+                    <Td key={f.key} className="min-w-32 whitespace-pre-line">{displayValue(f, e.answers[f.key]) || <span className="text-slate-300">—</span>}</Td>
+                  ))}
+                  <Td>
+                    <StatusBadge status={e.status} />
+                    {e.status === "revision" && e.review_comment && (
+                      <p className="mt-1 max-w-48 text-xs text-amber-800"><b>Sabab:</b> {e.review_comment}</p>
+                    )}
+                  </Td>
+                  <Td>
+                    {editable && (
+                      <div className="flex items-center gap-1">
+                        <Link href={`${base}/t/${token}/${e.id}`} className={buttonClass("outline", "sm")}>Tahrirlash</Link>
+                        <EntryDelete collectionId={col.id} token={token} entryId={e.id} />
+                      </div>
+                    )}
+                  </Td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </Table>
+      </Card>
 
-      <div className="space-y-3">
-        {group.entries.map((e, i) => {
-          const editable = open && (e.status === "draft" || e.status === "revision");
-          return (
-            <Card key={e.id}>
-              <CardBody className="space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="text-base font-semibold text-slate-900">
-                    {i + 1}. {regionMode && <span className="mr-1 rounded bg-blue-50 px-2 py-0.5 text-sm text-blue-900">{entryUnit(e)}</span>}
-                    {displayValue(col.fields[0], e.answers[col.fields[0].key]) || label}
-                  </h2>
-                  <StatusBadge status={e.status} />
-                </div>
-                <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-                  {col.fields.slice(1, 6).map((f) => {
-                    const v = displayValue(f, e.answers[f.key]);
-                    return v ? (
-                      <div key={f.key} className="flex gap-2"><dt className="text-slate-500">{f.label}:</dt><dd className="font-medium text-slate-900">{v}</dd></div>
-                    ) : null;
-                  })}
-                </dl>
-                {e.status === "revision" && e.review_comment && (
-                  <div role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><b>Qaytarish sababi:</b> {e.review_comment}</div>
-                )}
-                {e.status === "submitted" && <p className="text-xs text-slate-500">Vazirlik ko‘rib chiqmoqda.</p>}
-                {e.status === "approved" && <p className="text-xs text-emerald-700">Tasdiqlangan. Rahmat!</p>}
-                {editable && (
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <Link href={`${base}/t/${token}/${e.id}`} className={buttonClass("outline", "sm")}>Tahrirlash</Link>
-                    <EntrySubmit collectionId={col.id} token={token} entryId={e.id} label="Yuborish" />
-                  </div>
-                )}
-              </CardBody>
-            </Card>
-          );
-        })}
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
+        {open && (col.allow_multiple || regionMode) && (
+          <Link href={`${base}/t/${token}/yangi`} className={buttonClass("outline", "lg")}><Plus className="h-4 w-4" /> Yana {label.toLowerCase()} qo‘shish</Link>
+        )}
+        {open && pending.length > 0 ? (
+          <>
+            <EntrySubmit collectionId={col.id} token={token} entryId={null} count={pending.length} label={`Tekshirdim — vazirlikka yuborish (${pending.length})`} />
+            <span className="text-sm text-slate-600">Jadvalni diqqat bilan tekshiring. Yuborilgandan keyin o‘zgartirib bo‘lmaydi.</span>
+          </>
+        ) : (
+          <span className="text-sm font-medium text-emerald-700">Yuboriladigan yozuv yo‘q.</span>
+        )}
       </div>
     </div>
   );

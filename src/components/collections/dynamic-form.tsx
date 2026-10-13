@@ -3,10 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Plus, Save, Send, Trash2 } from "lucide-react";
+import { Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { savePublicEntry, type EntryGeo } from "@/app/actions/public";
 import { Button, Card, CardBody, Field, Input, Select, Textarea } from "@/components/ui/primitives";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { validateAnswers, type Answers, type AnswerValue, type ColumnDef, type FieldDef, type RowObj } from "@/lib/collections";
 
 type Values = Record<string, AnswerValue | undefined>;
@@ -135,7 +134,6 @@ export function DynamicForm({
   const [values, setValues] = useState<Values>(initial as Values);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
-  const [confirm, setConfirm] = useState(false);
   const [sel, setSel] = useState(chooser?.initial ?? "");
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<"tuman" | "shahar">("tuman");
@@ -169,7 +167,6 @@ export function DynamicForm({
     const check = validateAnswers(collection.fields, values as Record<string, unknown>, mode === "draft");
     if (!check.ok) {
       setErrors(check.errors);
-      setConfirm(false);
       toast.error("Ba’zi maydonlar to‘ldirilmagan yoki noto‘g‘ri");
       return;
     }
@@ -179,11 +176,10 @@ export function DynamicForm({
         if (res.fieldErrors) setErrors(res.fieldErrors);
         setServerError(res.error ?? "Xatolik yuz berdi");
         toast.error(res.error ?? "Xatolik yuz berdi");
-        setConfirm(false);
         if (res.token && !token) router.push(`/kiritish/c/${collection.id}/t/${res.token}`);
         return;
       }
-      toast.success(mode === "draft" ? "Qoralama saqlandi" : "Ma’lumot yuborildi");
+      toast.success("Saqlandi. Endi jadvalni tekshirib, yuboring.");
       router.push(`/kiritish/c/${collection.id}/t/${res.token}`);
       router.refresh();
     });
@@ -242,32 +238,11 @@ export function DynamicForm({
       {serverError && <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-800">{serverError}</p>}
 
       <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
-        <Button variant="outline" disabled={pending} onClick={() => persist("draft")}>
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Qoralama sifatida saqlash
-        </Button>
-        <Button variant="success" disabled={pending} onClick={() => {
-          const check = validateAnswers(collection.fields, values as Record<string, unknown>, false);
-          if (!check.ok) {
-            setErrors(check.errors);
-            toast.error("Ba’zi majburiy maydonlar to‘ldirilmagan");
-            return;
-          }
-          setConfirm(true);
-        }}>
-          <Send className="h-4 w-4" /> Saqlash va yuborish
+        <p className="text-sm text-slate-600">Saqlagach, kiritgan ma’lumotingiz jadval ko‘rinishida chiqadi — tekshirib, keyin yuborasiz.</p>
+        <Button variant="success" size="lg" disabled={pending} onClick={() => persist("draft")}>
+          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Saqlash va jadvalni ko‘rish
         </Button>
       </div>
-
-      <ConfirmDialog
-        open={confirm}
-        title="Vazirlikka yuborish"
-        description={`Yuborilgandan so‘ng ${collection.entry_label.toLowerCase()}ni qaytarilmaguncha tahrirlab bo‘lmaydi. Davom etasizmi?`}
-        confirmLabel="Ha, yuborish"
-        onClose={() => setConfirm(false)}
-        onConfirm={async () => {
-          persist("submit");
-        }}
-      />
     </form>
   );
 }

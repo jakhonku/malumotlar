@@ -10,14 +10,14 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /** entryId bo‘lsa bitta yozuvni, bo‘lmasa havoladagi barcha tayyor yozuvlarni yuboradi. */
 export function EntrySubmit({
-  collectionId, token, entryId, label, count,
-}: { collectionId: string; token: string; entryId: string | null; label: string; count?: number }) {
+  collectionId, token, entryId, label, count, disabled,
+}: { collectionId: string; token: string; entryId: string | null; label: string; count?: number; disabled?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [, start] = useTransition();
   return (
     <>
-      <Button variant="success" size={entryId ? "sm" : "default"} onClick={() => setOpen(true)}>
+      <Button variant="success" size={entryId ? "sm" : "lg"} disabled={disabled} onClick={() => setOpen(true)}>
         <Send className="h-4 w-4" /> {label}
       </Button>
       <ConfirmDialog
@@ -26,7 +26,7 @@ export function EntrySubmit({
         description={
           entryId
             ? "Yuborilgandan so‘ng ma’lumotni qaytarilmaguncha tahrirlab bo‘lmaydi. Davom etasizmi?"
-            : `${count ?? ""} ta yozuv vazirlikka yuboriladi va qaytarilmaguncha tahrirlab bo‘lmaydi. Davom etasizmi?`
+            : `Jadvaldagi ${count ?? ""} ta yozuvni tekshirdingizmi? Yuborilgandan so‘ng ular qaytarilmaguncha tahrirlab bo‘lmaydi.`
         }
         confirmLabel="Ha, yuborish"
         onClose={() => setOpen(false)}

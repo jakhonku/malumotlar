@@ -197,3 +197,12 @@ export async function submitPublicEntries(
   });
   return error ? { ok: false, error: dbMessage(error) } : { ok: true, sent: data as number };
 }
+
+/** Hali yuborilmagan yozuvni o'chirish (token egasi). */
+export async function deletePublicEntry(collectionId: string, token: string, entryId: string): Promise<{ ok: boolean; error?: string }> {
+  if (!TOKEN_RE.test(token) || !UUID_RE.test(collectionId) || !UUID_RE.test(entryId)) return { ok: false, error: "Havola noto‘g‘ri" };
+  const { error } = await createAdminClient().rpc("col_public_delete", {
+    p_collection: collectionId, p_token_hash: sha256(token), p_entry_id: entryId, p_ip_hash: await ipHash(),
+  });
+  return error ? { ok: false, error: dbMessage(error) } : { ok: true };
+}
