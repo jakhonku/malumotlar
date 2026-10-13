@@ -11,6 +11,7 @@ import { fmtDate } from "@/lib/format";
 import { DEPARTMENT_NAME, MINISTRY_FULL, regionOrgName, regionSelf } from "@/lib/brand";
 import { Emblem } from "@/components/brand/emblem";
 import { DeadlineTimer } from "@/components/deadline-timer";
+import { AddDistrict } from "@/components/add-district";
 import { buttonClass, Card, CardBody, EmptyState, cn } from "@/components/ui/primitives";
 
 export const dynamic = "force-dynamic";
@@ -154,7 +155,11 @@ export default async function RegionPanel() {
               )}
 
               <div>
-                <h3 className="mb-2 text-sm font-semibold text-slate-800">Hududlar — bosib ma’lumot kiriting yoki tahrirlang</h3>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-slate-800">Hududlar — bosib ma’lumot kiriting yoki tahrirlang</h3>
+                  {c.audience !== "regional" && districts.length > 0 && <AddDistrict />}
+                </div>
+                {c.audience !== "regional" && districts.length === 0 && <div className="mb-3"><AddDistrict empty /></div>}
                 <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {units.map((u) => (
                     <li key={u.key}>
