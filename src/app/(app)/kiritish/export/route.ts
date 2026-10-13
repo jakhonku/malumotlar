@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCollection, getEntryGroup, UUID_RE } from "@/lib/public-collection";
+import { getManager } from "@/lib/manager-guard";
+import { deriveToken } from "@/lib/region-token";
 import { buildCollectionDocx, buildCollectionXlsx } from "@/lib/report/collection";
 import { STATUS_LABELS } from "@/lib/constants";
 import { fmtDate } from "@/lib/format";
@@ -19,6 +21,8 @@ export async function GET(req: NextRequest) {
   const token = sp.get("t") ?? "";
   const format = sp.get("format") === "xlsx" ? "xlsx" : "docx";
   if (!UUID_RE.test(cid)) return NextResponse.json({ error: "Noto‘g‘ri so‘rov" }, { status: 400 });
+  const me = await getManager();
+  if (!me || token !== deriveToken(cid, me.region_id)) return NextResponse.json({ error: "Ruxsat yo‘q. Tizimga kiring." }, { status: 403 });
   const col = await getCollection(cid);
   const group = col ? await getEntryGroup(cid, token) : null;
   if (!col || !group) return NextResponse.json({ error: "Havola noto‘g‘ri" }, { status: 404 });

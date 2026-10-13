@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { displayValue } from "@/lib/collections";
 import { Badge, buttonClass, Card, CardHeader, CardTitle, Table, Td, Th } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { LinkPanel } from "./link-panel";
+import { requireManagerToken } from "@/lib/manager-guard";
 import { EntrySubmit } from "@/components/collections/entry-submit";
 import { EntryDelete } from "@/components/collections/entry-delete";
 import { SignedUpload } from "@/components/collections/signed-upload";
@@ -20,6 +20,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CollectionUnitPage({ params }: { params: Promise<{ cid: string; token: string }> }) {
   const { cid, token } = await params;
+  await requireManagerToken(cid, token);
   const col = await getCollection(cid);
   const group = col ? await getEntryGroup(cid, token) : null;
   if (!col || !group) notFound();
@@ -64,8 +65,6 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
         <p className="text-xs uppercase tracking-wide text-slate-500">{col.title}</p>
         <h1 className="text-2xl font-bold text-slate-900">{unitLabel(group)}</h1>
       </div>
-
-      <LinkPanel token={token} base={base} />
 
       {!open && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Bu ma’lumot yig‘ish yopiq — yangi yozuv qo‘shib yoki yuborib bo‘lmaydi.</div>}
 

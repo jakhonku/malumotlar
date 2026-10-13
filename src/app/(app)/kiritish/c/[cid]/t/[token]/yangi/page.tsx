@@ -1,4 +1,5 @@
 import { regionSelf } from "@/lib/brand";
+import { requireManagerToken } from "@/lib/manager-guard";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
@@ -11,6 +12,7 @@ export default async function CollectionAddEntry({
   params, searchParams,
 }: { params: Promise<{ cid: string; token: string }>; searchParams: Promise<{ unit?: string }> }) {
   const { cid, token } = await params;
+  await requireManagerToken(cid, token);
   const sp = await searchParams;
   const col = await getCollection(cid);
   const group = col ? await getEntryGroup(cid, token) : null;

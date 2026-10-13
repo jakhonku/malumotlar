@@ -1,4 +1,5 @@
 import { regionSelf } from "@/lib/brand";
+import { requireManagerToken } from "@/lib/manager-guard";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CollectionEditEntry({ params }: { params: Promise<{ cid: string; token: string; eid: string }> }) {
   const { cid, token, eid } = await params;
+  await requireManagerToken(cid, token);
   const col = await getCollection(cid);
   const group = col ? await getEntryGroup(cid, token) : null;
   const entry = group?.entries.find((e) => e.id === eid);

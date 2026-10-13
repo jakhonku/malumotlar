@@ -85,9 +85,6 @@ export default async function CollectionResultsPage({ params, searchParams }: { 
     <>
       <PageHeader title={col.title} description={col.description ?? undefined}>
         {closed ? <Badge tone="red">Yopiq</Badge> : <Badge tone="green">Faol</Badge>}
-        <Link href={`/kiritish/c/${col.id}`} target="_blank" className={buttonClass("outline")}>
-          <ExternalLink className="h-4 w-4" /> Hududlar uchun havola
-        </Link>
         {admin && (
           <>
             <Link href={`/collections/${col.id}/edit`} className={buttonClass("outline")}><Pencil className="h-4 w-4" /> Tahrirlash</Link>
@@ -96,8 +93,7 @@ export default async function CollectionResultsPage({ params, searchParams }: { 
         )}
       </PageHeader>
       <p className="mb-4 text-sm text-slate-600">
-        {AUDIENCE_LABELS[col.audience]} · {col.fields.length} ta maydon{col.deadline ? ` · muddat: ${fmtDate(col.deadline)}` : ""} ·
-        hududlar uchun havola: <code className="rounded bg-slate-100 px-1">/kiritish/c/{col.id}</code>
+        {AUDIENCE_LABELS[col.audience]} · {col.fields.length} ta maydon{col.deadline ? ` · muddat: ${fmtDate(col.deadline)}` : ""}
       </p>
 
       <div className="mb-6"><ExportBar collectionId={col.id} regionId={profile.role === "region_manager" ? (profile.region_id ?? undefined) : undefined} /></div>
@@ -186,7 +182,7 @@ export default async function CollectionResultsPage({ params, searchParams }: { 
       <Card>
         <div className="border-b border-slate-200 px-4 py-3 text-sm text-slate-600">Topildi: <b className="text-slate-900">{count ?? 0}</b> ta</div>
         {rows.length === 0 ? (
-          <EmptyState title="Hozircha ma’lumot kiritilmagan" text="Hududlarga havolani yuboring: /kiritish" />
+          <EmptyState title="Hozircha ma’lumot kiritilmagan" text="Viloyat boshqarmalari o‘z panelidan ma’lumot kiritadi." />
         ) : (
           <Table>
             <thead>

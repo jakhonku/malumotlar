@@ -7,7 +7,7 @@ import { buildEventPayload, normalizeDistrictName, toFieldErrors } from "@/lib/e
 import { validateAnswers, type CollectionRow } from "@/lib/collections";
 import { BUCKET, ensureBucket, signedPath } from "@/lib/signed-files";
 import { deriveToken } from "@/lib/region-token";
-import { getProfile } from "@/lib/auth";
+import { getManager } from "@/lib/manager-guard";
 import { draftSchema, submitSchema, type EventFormValues } from "@/lib/validators";
 
 export interface PublicSaveResult {
@@ -33,6 +33,17 @@ function dbMessage(error: { code?: string; message: string }): string {
 
 /** Eski «Yangi yil tadbirlari» ochiq formasi yopilgan — ma’lumot faqat «Ma’lumot yig‘ish» orqali olinadi. */
 const LEGACY_FORM_CLOSED = true;
+const LOGIN_NEEDED = "Tizimga kiring: ma’lumotni faqat hudud boshqarmasi mas’uli kiritadi.";
+
+/** Faqat tizimga kirgan hudud mas'uli va faqat o'z hududining havolasi bilan. */
+async function authorize(collectionId: string, token: string | null): Promise<{ ok: true; region: string; token: string } | { ok: false; error: string }> {
+  const me = await getManager();
+  if (!me) return { ok: false, error: LOGIN_NEEDED };
+  if (!UUID_RE.test(collectionId)) return { ok: false, error: "Ma’lumot yig‘ish topilmadi" };
+  const own = deriveToken(collectionId, me.region_id);
+  if (token !== null && token !== own) return { ok: false, error: "Havola sizning hududingizga tegishli emas" };
+  return { ok: true, region: me.region_id, token: own };
+}
 const TOKEN_RE = /^[0-9a-f]{48}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -124,10 +135,13 @@ export async function savePublicEntry(
   answers: Record<string, unknown>,
   mode: "draft" | "submit",
 ): Promise<PublicEntryResult> {
-  if (token && !TOKEN_RE.test(token)) return { ok: false, error: "Hudud havolasi noto‘g‘ri" };
   if (entryId && !UUID_RE.test(entryId)) return { ok: false, error: "Yozuv noto‘g‘ri" };
+  const auth = await authorize(collectionId, token);
+  if (!auth.ok) return { ok: false, error: auth.error };
+  if (geo.region_id !== auth.region) return { ok: false, error: "Faqat o‘z hududingiz ma’lumotini kiritishingiz mumkin" };
   const col = await loadCollection(collectionId);
   if (!col) return { ok: false, error: "Ma’lumot yig‘ish topilmadi" };
+  geo = { ...geo, group_mode: col.audience === "regional" ? "unit" : "region" };
 
   const v = validateAnswers(col.fields, answers, false);
   if (!v.ok) return { ok: false, error: "Ba’zi maydonlar noto‘g‘ri to‘ldirilgan", fieldErrors: v.errors };
@@ -137,15 +151,13 @@ export async function savePublicEntry(
 
   const admin = createAdminClient();
   const ip = await ipHash();
-  // Tizimga kirgan viloyat mas'uli o'z viloyati uchun doimiy havola oladi (qayta kirganda yozuvlari yo'qolmaydi)
-  let forced: string | null = null;
-  if (!token) {
-    const me = await getProfile();
-    if (me?.role === "region_manager" && me.region_id === geo.region_id && (geo.group_mode === "region" || geo.scope === "regional")) {
-      forced = deriveToken(col.id, me.region_id);
-    }
-  }
-  const newToken = token ? null : (forced ?? randomBytes(24).toString("hex"));
+  // Doimiy hudud havolasi: yozuvlar bor bo'lsa shu havolaga qo'shiladi, yo'q bo'lsa yangi guruh ochiladi
+  const { count: existing } = await admin
+    .from("collection_entries").select("id", { count: "exact", head: true })
+    .eq("collection_id", col.id).eq("edit_token_hash", sha256(auth.token)).is("deleted_at", null);
+  const hasGroup = (existing ?? 0) > 0;
+  token = hasGroup ? auth.token : null;
+  const newToken = hasGroup ? null : auth.token;
   const isNew = geo.district_id === "__new__";
 
   const { data: id, error } = await admin.rpc("col_public_save", {
@@ -165,7 +177,7 @@ export async function savePublicEntry(
     },
   });
   if (error) return { ok: false, error: dbMessage(error) };
-  const finalToken = (token ?? newToken)!;
+  const finalToken = auth.token;
 
   if (mode === "submit") {
     const { error: sErr } = await admin.rpc("col_public_submit", {
@@ -182,8 +194,9 @@ export async function submitPublicEntries(
   token: string,
   entryId: string | null,
 ): Promise<{ ok: boolean; sent?: number; error?: string }> {
-  if (!TOKEN_RE.test(token)) return { ok: false, error: "Hudud havolasi noto‘g‘ri" };
   if (entryId && !UUID_RE.test(entryId)) return { ok: false, error: "Yozuv noto‘g‘ri" };
+  const auth = await authorize(collectionId, token);
+  if (!auth.ok) return { ok: false, error: auth.error };
   const col = await loadCollection(collectionId);
   if (!col) return { ok: false, error: "Ma’lumot yig‘ish topilmadi" };
 
@@ -215,7 +228,9 @@ export async function submitPublicEntries(
 
 /** Hali yuborilmagan yozuvni o'chirish (token egasi). */
 export async function deletePublicEntry(collectionId: string, token: string, entryId: string): Promise<{ ok: boolean; error?: string }> {
-  if (!TOKEN_RE.test(token) || !UUID_RE.test(collectionId) || !UUID_RE.test(entryId)) return { ok: false, error: "Havola noto‘g‘ri" };
+  if (!UUID_RE.test(entryId)) return { ok: false, error: "Yozuv noto‘g‘ri" };
+  const auth = await authorize(collectionId, token);
+  if (!auth.ok) return { ok: false, error: auth.error };
   const { error } = await createAdminClient().rpc("col_public_delete", {
     p_collection: collectionId, p_token_hash: sha256(token), p_entry_id: entryId, p_ip_hash: await ipHash(),
   });
@@ -227,7 +242,8 @@ export async function createSignedUpload(
   collectionId: string,
   token: string,
 ): Promise<{ ok: boolean; path?: string; uploadToken?: string; error?: string }> {
-  if (!TOKEN_RE.test(token) || !UUID_RE.test(collectionId)) return { ok: false, error: "Havola noto‘g‘ri" };
+  const auth = await authorize(collectionId, token);
+  if (!auth.ok) return { ok: false, error: auth.error };
   const admin = createAdminClient();
   const { data } = await admin
     .from("collection_entries")

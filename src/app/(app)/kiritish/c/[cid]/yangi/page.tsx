@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { requireManager } from "@/lib/manager-guard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCollection, isOpen, UUID_RE } from "@/lib/public-collection";
 import { regionOrgName, regionSelfLabel, regionSelf } from "@/lib/brand";
@@ -14,6 +15,8 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
 export default async function CollectionNewEntry({ params, searchParams }: { params: Promise<{ cid: string }>; searchParams: Promise<SP> }) {
   const { cid } = await params;
   const sp = await searchParams;
+  const me = await requireManager();
+  if (one(sp.region) !== me.region_id) redirect("/boshqarma");
   const col = await getCollection(cid);
   if (!col) notFound();
   if (!isOpen(col)) redirect(`/kiritish/c/${col.id}`);

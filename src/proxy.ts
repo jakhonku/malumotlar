@@ -7,9 +7,6 @@ export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   const path = request.nextUrl.pathname;
-  // Ochiq ma’lumot kiritish formasi login talab qilmaydi
-  if (path === "/kiritish" || path.startsWith("/kiritish/")) return NextResponse.next();
-
   if (!url || !key) {
     // Supabase sozlanmagan: login sahifasi sozlash bo‘yicha ko‘rsatma chiqaradi
     if (path === "/login") return NextResponse.next();
@@ -32,8 +29,7 @@ export async function proxy(request: NextRequest) {
   const isLogin = path === "/login";
   if (!data?.claims && !isLogin) {
     const redirect = request.nextUrl.clone();
-    // Asosiy sahifaga kirgan, login qilmagan foydalanuvchi ochiq forma sahifasiga yo‘naltiriladi
-    redirect.pathname = path === "/" ? "/kiritish" : "/login";
+    redirect.pathname = "/login";
     redirect.search = "";
     return NextResponse.redirect(redirect);
   }
