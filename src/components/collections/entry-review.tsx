@@ -15,7 +15,9 @@ const CFG: Record<Action, { label: string; confirm: string; comment: boolean; va
   reopen: { label: "Qayta ochish", confirm: "Tasdiqlangan ma’lumotni qayta ochish sababini yozing.", comment: true, variant: "outline" },
 };
 
-export function EntryReview({ entryId, actions }: { entryId: string; actions: Action[] }) {
+const SHORT: Record<Action, string> = { approve: "Tasdiqlash", return: "Qaytarish", reopen: "Qayta ochish" };
+
+export function EntryReview({ entryId, actions, compact }: { entryId: string; actions: Action[]; compact?: boolean }) {
   const router = useRouter();
   const [active, setActive] = useState<Action | null>(null);
   const cfg = active ? CFG[active] : null;
@@ -23,7 +25,7 @@ export function EntryReview({ entryId, actions }: { entryId: string; actions: Ac
   return (
     <div className="flex flex-wrap gap-2">
       {actions.map((a) => (
-        <Button key={a} variant={CFG[a].variant} onClick={() => setActive(a)}>{CFG[a].label}</Button>
+        <Button key={a} variant={CFG[a].variant} size={compact ? "sm" : "default"} onClick={() => setActive(a)}>{compact ? SHORT[a] : CFG[a].label}</Button>
       ))}
       <ConfirmDialog
         open={!!active}

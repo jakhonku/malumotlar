@@ -94,3 +94,21 @@ export async function adminUpdateEntry(
   const { error } = await supabase.rpc("col_admin_update", { p_entry: entryId, p_answers: v.values });
   return error ? { ok: false, error: error.message.includes("Qoralama") ? "Qoralamani tahrirlab bo‘lmaydi" : "Saqlab bo‘lmadi" } : { ok: true };
 }
+
+/** Hududning tekshiruv kutayotgan (yuborilgan) barcha yozuvlarini tasdiqlaydi. */
+export async function approveRegionEntries(collectionId: string, regionId: string): Promise<{ ok: boolean; count?: number; error?: string }> {
+  const me = await adminOnly();
+  if (!me) return { ok: false, error: "Bu amal faqat vazirlik administratori uchun" };
+  const uuid = /^[0-9a-f-]{36}$/i;
+  if (!uuid.test(collectionId) || !uuid.test(regionId)) return { ok: false, error: "So‘rov noto‘g‘ri" };
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("collection_entries").select("id").eq("collection_id", collectionId).eq("region_id", regionId).eq("status", "submitted").limit(1000);
+  let done = 0;
+  for (const row of data ?? []) {
+    const { error } = await supabase.rpc("col_review", { p_entry: row.id, p_action: "approve", p_comment: null });
+    if (error) return { ok: false, count: done, error: `${done} ta tasdiqlandi, keyin xatolik: ${error.message}` };
+    done++;
+  }
+  return { ok: true, count: done };
+}

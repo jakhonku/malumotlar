@@ -10,6 +10,7 @@ const TOP = new Set(["/", "/boshqarma", "/collections", "/malumotlar", "/chat", 
 export function parentPath(path: string): string {
   if (/^\/kiritish\/c\/[^/]+\/t\/[^/]+$/.test(path) || /^\/kiritish\/c\/[^/]+\/yangi$/.test(path)) return "/boshqarma";
   if (/^\/kiritish\/c\/[^/]+\/t\/[^/]+\/.+$/.test(path)) return path.replace(/^(\/kiritish\/c\/[^/]+\/t\/[^/]+)\/.*$/, "$1");
+  if (/^\/collections\/[^/]+\/hudud\/[^/]+$/.test(path)) return "/malumotlar";
   const m = /^(\/collections\/[^/]+)\/(entries|edit)(\/.*)?$/.exec(path);
   if (m) return m[1];
   const parts = path.split("/").filter(Boolean);

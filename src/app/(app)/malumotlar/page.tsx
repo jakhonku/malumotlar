@@ -115,7 +115,7 @@ export default async function IncomingPage({ searchParams }: { searchParams: Pro
               {rows.map((r, i) => (
                 <tr key={r.id} className="hover:bg-slate-50">
                   <Td className="text-slate-500">{from + i + 1}</Td>
-                  <Td className="whitespace-nowrap font-medium">{r.region?.name}</Td>
+                  <Td className="whitespace-nowrap font-medium"><Link href={`/collections/${col.id}/hudud/${r.region_id}`} className="text-blue-800 hover:underline">{r.region?.name}</Link></Td>
                   <Td className="whitespace-nowrap">{r.district?.name ?? regionSelf(r.region?.name ?? "")}</Td>
                   {col.fields.map((f) => (
                     <Td key={f.key} className="min-w-36 max-w-80 whitespace-pre-line">
@@ -129,7 +129,7 @@ export default async function IncomingPage({ searchParams }: { searchParams: Pro
                   <Td className="whitespace-nowrap text-xs">{fmtDateTime(r.submitted_at)}</Td>
                   <Td>
                     <div className="flex gap-1">
-                      <Link href={`/collections/${col.id}/entries/${r.id}`} className={buttonClass(r.status === "submitted" ? "default" : "outline", "sm")}>
+                      <Link href={`/collections/${col.id}/hudud/${r.region_id}#e-${r.id}`} className={buttonClass(r.status === "submitted" ? "default" : "outline", "sm")}>
                         {r.status === "submitted" ? "Tekshirish" : "Ochish"}
                       </Link>
                       {profile.role === "super_admin" && (
