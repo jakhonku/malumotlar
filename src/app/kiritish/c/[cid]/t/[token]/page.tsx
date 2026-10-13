@@ -126,6 +126,7 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
                     {editable && (
                       <div className="flex items-center gap-1">
                         <Link href={`${base}/t/${token}/${e.id}`} className={buttonClass("outline", "sm")}>Tahrirlash</Link>
+                        <EntrySubmit collectionId={col.id} token={token} entryId={e.id} label="Yuborish" />
                         <EntryDelete collectionId={col.id} token={token} entryId={e.id} />
                       </div>
                     )}
@@ -143,8 +144,8 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
         )}
         {open && pending.length > 0 ? (
           <>
-            <EntrySubmit collectionId={col.id} token={token} entryId={null} count={pending.length} label={`Tekshirdim — vazirlikka yuborish (${pending.length})`} />
-            <span className="text-sm text-slate-600">Jadvalni diqqat bilan tekshiring. Yuborilgandan keyin o‘zgartirib bo‘lmaydi.</span>
+            <EntrySubmit collectionId={col.id} token={token} entryId={null} count={pending.length} label={`Hammasini yuborish (${pending.length})`} />
+            <span className="text-sm text-slate-600">Har bir qatorni alohida «Yuborish» bilan yuborishingiz mumkin (qaysi tuman tayyor bo‘lsa shuni), yoki hammasini birga.</span>
           </>
         ) : (
           <span className="text-sm font-medium text-emerald-700">Yuboriladigan yozuv yo‘q.</span>
