@@ -10,6 +10,7 @@ export interface Profile {
   phone: string | null;
   position?: string | null;
   avatar_path?: string | null;
+  active_session_id?: string | null;
   can_edit_districts: boolean;
   is_active: boolean;
 }

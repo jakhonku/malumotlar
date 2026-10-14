@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { LOGIN_DOMAIN } from "@/lib/constants";
+import { takeOverSession } from "@/lib/single-session";
 
 interface LoginState {
   error?: string;
@@ -30,6 +31,7 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
     await supabase.auth.signOut();
     return { error: "Hisobingiz faol emas. Vazirlik administratori bilan bog‘laning." };
   }
+  if (data.session) await takeOverSession(data.user.id, data.session.access_token);
   redirect("/");
 }
 

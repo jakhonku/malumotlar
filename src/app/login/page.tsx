@@ -7,7 +7,7 @@ import { DEPARTMENT_NAME } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ havola?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ havola?: string; chiqarildi?: string }> }) {
   const sp = await searchParams;
   const configured = isSupabaseConfigured();
   const profile = configured ? await getProfile() : null;
@@ -25,6 +25,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <p className="mt-2 text-sm font-medium text-slate-100">{DEPARTMENT_NAME}</p>
           <p className="mt-1 text-xs text-slate-300">Tadbirlar ma’lumotlarini yig‘ish va monitoring tizimi</p>
         </div>
+        {sp.chiqarildi && (
+          <p role="alert" className="mb-3 rounded-lg bg-amber-100 p-3 text-sm font-medium text-amber-900">Hisobingizga boshqa qurilma/brauzerdan kirildi, shuning uchun bu seans yopildi. Bitta hisobda bir vaqtda faqat bitta kishi ishlay oladi. Qayta kiring.</p>
+        )}
         {sp.havola && (
           <p role="alert" className="mb-3 rounded-lg bg-amber-100 p-3 text-sm font-medium text-amber-900">Tezkor kirish havolasi eskirgan yoki bekor qilingan. Login va parol bilan kiring yoki vazirlikdan yangi havola so‘rang.</p>
         )}

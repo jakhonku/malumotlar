@@ -261,3 +261,16 @@ describe("tezkor kirish havolalari Word hujjati", () => {
     for (const t of ["https://x.uz/kirish/abc", "https://x.uz/kirish/def", "Havola 2 kun amal qiladi", "16.10.2026 14:40 gacha", "yangi havola yaratgach, bu havola ishlamaydi"]) expect(xml).toContain(t);
   });
 });
+
+describe("bitta profilga bitta sessiya", () => {
+  it("sessiya almashtirilganini aniqlaydi", async () => {
+    const { isKicked, sessionIdOf } = await import("../src/lib/session-utils");
+    expect(isKicked("a", "a")).toBe(false);
+    expect(isKicked("a", "b")).toBe(true);   // boshqa joydan kirilgan — eskisi chiqariladi
+    expect(isKicked("a", null)).toBe(false); // hali bog‘lanmagan (eski sessiyalar) — ruxsat
+    expect(isKicked(null, "b")).toBe(false);
+    const jwt = `x.${Buffer.from(JSON.stringify({ session_id: "s-1" })).toString("base64url")}.y`;
+    expect(sessionIdOf(jwt)).toBe("s-1");
+    expect(sessionIdOf("buzuq")).toBeNull();
+  });
+});

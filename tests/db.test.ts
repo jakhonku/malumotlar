@@ -71,7 +71,7 @@ beforeAll(async () => {
     alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
     alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
   `);
-  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "migrations/0009_public_delete.sql", "migrations/0011_chat_and_hide_drafts.sql", "migrations/0013_edit_submitted.sql", "migrations/0014_admin_edit.sql", "migrations/0016_soft_deadline.sql", "migrations/0017_profile_photo.sql", "migrations/0019_login_links.sql", "seed.sql", "migrations/0015_fix_districts.sql", "migrations/0018_region_order.sql"]) {
+  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "migrations/0009_public_delete.sql", "migrations/0011_chat_and_hide_drafts.sql", "migrations/0013_edit_submitted.sql", "migrations/0014_admin_edit.sql", "migrations/0016_soft_deadline.sql", "migrations/0017_profile_photo.sql", "migrations/0019_login_links.sql", "migrations/0020_single_session.sql", "seed.sql", "migrations/0015_fix_districts.sql", "migrations/0018_region_order.sql"]) {
     await db.exec(sql(f));
   }
   await db.exec("grant all on all tables in schema public to service_role;");
