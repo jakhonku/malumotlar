@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import sharp from "sharp";
 
 const src = process.argv[2] ?? "public/logo-emblem.png";
-const buf = await sharp(src).resize({ height: 220 }).png({ compressionLevel: 9, palette: true }).toBuffer({ resolveWithObject: true });
+const buf = await sharp(src).resize({ height: 160 }).png({ compressionLevel: 9, palette: true }).toBuffer({ resolveWithObject: true });
 const out =
   "// Avtomatik hosil qilingan (scripts/make-logo-module.mjs): gerb PNG, Word hisobotlariga joylanadi.\n" +
   `export const LOGO_PNG_BASE64 =\n  "${buf.data.toString("base64")}";\n` +
