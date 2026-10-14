@@ -12,6 +12,7 @@ import { DEPARTMENT_NAME, MINISTRY_FULL, regionOrgName, regionSelf } from "@/lib
 import { Emblem } from "@/components/brand/emblem";
 import { DeadlineTimer } from "@/components/deadline-timer";
 import { AddDistrict } from "@/components/add-district";
+import { EditDistricts } from "@/components/edit-districts";
 import { buttonClass, Card, CardBody, EmptyState, cn } from "@/components/ui/primitives";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +43,7 @@ export default async function RegionPanel() {
   const [{ data: region }, { data: cols }, { data: dists }] = await Promise.all([
     supabase.from("regions").select("name").eq("id", rid).single(),
     supabase.from("collections").select("*").eq("is_active", true).order("created_at", { ascending: false }),
-    supabase.from("districts").select("id,name").eq("region_id", rid).eq("is_active", true)
+    supabase.from("districts").select("id,name,district_type").eq("region_id", rid).eq("is_active", true)
       .order("district_type", { ascending: false }).order("name").limit(500),
   ]);
   const collections = ((cols ?? []) as CollectionRow[]).filter(isOpen);
@@ -192,6 +193,18 @@ export default async function RegionPanel() {
             </CardBody>
           </Card>
         ))
+      )}
+
+      {districts.length > 0 && (
+        <Card>
+          <CardBody className="space-y-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Tuman va shaharlar ro‘yxati</h2>
+              <p className="text-sm text-slate-600">Nomi noto‘g‘ri yoki eskirgan bo‘lsa, qalamcha belgisini bosib tuzating — kiritilgan ma’lumotlar saqlanib qoladi.</p>
+            </div>
+            <EditDistricts items={districts.map((d) => ({ id: d.id, name: d.name, type: d.district_type === "shahar" ? "shahar" : "tuman" }))} />
+          </CardBody>
+        </Card>
       )}
     </div>
   );

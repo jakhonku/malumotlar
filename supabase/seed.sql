@@ -1,5 +1,5 @@
 -- seed.sql — boshlang'ich hududlar ro'yxati (takror ishga tushirish xavfsiz).
--- DIQQAT: tuman/shaharlar ro'yxatini rasmiy manba bilan solishtiring; farq bo'lsa
+-- Ro'yxat 2026-10 holatida rasmiy manbalar (stat.uz, gov.uz, kun.uz) bilan solishtirilgan (0015 ga qarang); farq bo'lsa
 -- tizimdagi "Sozlamalar → Hududlar" bo'limida tahrirlang.
 
 insert into public.regions (code, name, region_type, sort_order) values
@@ -24,7 +24,6 @@ select r.id, d.name, d.dtype
 from (values
   -- Qoraqalpog‘iston Respublikasi
   ('qoraqalpogiston', 'Nukus shahri', 'shahar'),
-  ('qoraqalpogiston', 'Taxiatosh shahri', 'shahar'),
   ('qoraqalpogiston', 'Amudaryo tumani', 'tuman'),
   ('qoraqalpogiston', 'Beruniy tumani', 'tuman'),
   ('qoraqalpogiston', 'Bo‘zatov tumani', 'tuman'),
@@ -37,6 +36,7 @@ from (values
   ('qoraqalpogiston', 'Qorao‘zak tumani', 'tuman'),
   ('qoraqalpogiston', 'Qo‘ng‘irot tumani', 'tuman'),
   ('qoraqalpogiston', 'Shumanay tumani', 'tuman'),
+  ('qoraqalpogiston', 'Taxiatosh tumani', 'tuman'),
   ('qoraqalpogiston', 'Taxtako‘pir tumani', 'tuman'),
   ('qoraqalpogiston', 'To‘rtko‘l tumani', 'tuman'),
   ('qoraqalpogiston', 'Xo‘jayli tumani', 'tuman'),
@@ -105,6 +105,7 @@ from (values
   -- Navoiy viloyati
   ('navoiy', 'Navoiy shahri', 'shahar'),
   ('navoiy', 'Zarafshon shahri', 'shahar'),
+  ('navoiy', 'G‘ozg‘on shahri', 'shahar'),
   ('navoiy', 'Karmana tumani', 'tuman'),
   ('navoiy', 'Konimex tumani', 'tuman'),
   ('navoiy', 'Navbahor tumani', 'tuman'),
@@ -113,7 +114,6 @@ from (values
   ('navoiy', 'Tomdi tumani', 'tuman'),
   ('navoiy', 'Uchquduq tumani', 'tuman'),
   ('navoiy', 'Xatirchi tumani', 'tuman'),
-  ('navoiy', 'Yangirabot tumani', 'tuman'),
   -- Namangan viloyati
   ('namangan', 'Namangan shahri', 'shahar'),
   ('namangan', 'Chortoq tumani', 'tuman'),
@@ -128,6 +128,7 @@ from (values
   ('namangan', 'Uchqo‘rg‘on tumani', 'tuman'),
   ('namangan', 'Uychi tumani', 'tuman'),
   ('namangan', 'Yangiqo‘rg‘on tumani', 'tuman'),
+  ('namangan', 'Yangi Namangan tumani', 'tuman'),
   -- Samarqand viloyati
   ('samarqand', 'Samarqand shahri', 'shahar'),
   ('samarqand', 'Kattaqo‘rg‘on shahri', 'shahar'),
