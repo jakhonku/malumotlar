@@ -237,7 +237,8 @@ describe("Toshkent vaqti", () => {
 import { parentPath } from "../src/components/layout/back-button";
 describe("«Orqaga» manzillari", () => {
   it("chuqur sahifalar to‘g‘ri ota sahifaga qaytadi", () => {
-    expect(parentPath("/collections/abc/entries/xyz")).toBe("/collections/abc");
+    expect(parentPath("/collections/abc/entries/xyz")).toBe("/collections/abc/hududlar");
+    expect(parentPath("/collections/abc/entries/xyz/edit")).toBe("/collections/abc/entries/xyz");
     expect(parentPath("/collections/abc/edit")).toBe("/collections/abc");
     expect(parentPath("/collections/new")).toBe("/collections");
     expect(parentPath("/kiritish/c/c1/t/tok")).toBe("/boshqarma");

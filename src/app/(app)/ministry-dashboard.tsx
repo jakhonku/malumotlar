@@ -303,7 +303,7 @@ export async function CollectionOverview({ collectionId }: { collectionId: strin
                         <Td className="font-medium">{e.region?.name}</Td>
                         <Td>{e.district?.name ?? regionSelf(e.region?.name ?? "")}</Td>
                         <Td className="whitespace-nowrap text-xs">{fmtDateTime(e.submitted_at)}</Td>
-                        <Td><Link href={`${base}/hudud/${e.region_id}#e-${e.id}`} className={buttonClass("default", "sm")}>Tekshirish</Link></Td>
+                        <Td><Link href={`${base}/entries/${e.id}`} className={buttonClass("default", "sm")}>Tekshirish</Link></Td>
                       </tr>
                     ))}
                   </tbody>

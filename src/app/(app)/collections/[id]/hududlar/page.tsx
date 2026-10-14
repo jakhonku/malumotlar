@@ -107,7 +107,7 @@ export default async function IncomingPage({ params, searchParams }: { params: P
                   <Td className="whitespace-nowrap text-xs">{fmtDateTime(r.submitted_at)}</Td>
                   <Td>
                     <div className="flex gap-1">
-                      <Link href={`/collections/${col.id}/hudud/${r.region_id}#e-${r.id}`} className={buttonClass(r.status === "submitted" ? "default" : "outline", "sm")}>
+                      <Link href={`/collections/${col.id}/entries/${r.id}`} className={buttonClass(r.status === "submitted" ? "default" : "outline", "sm")}>
                         {r.status === "submitted" ? "Tekshirish" : "Ochish"}
                       </Link>
                       {profile.role === "super_admin" && (

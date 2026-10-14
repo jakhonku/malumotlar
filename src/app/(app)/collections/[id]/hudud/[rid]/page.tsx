@@ -118,6 +118,7 @@ export default async function RegionReviewPage({ params }: { params: Promise<{ i
                           compact
                           actions={r.status === "submitted" ? ["approve", "return"] : r.status === "approved" ? ["reopen"] : []}
                         />
+                        <Link href={`/collections/${col.id}/entries/${r.id}`} className={buttonClass("outline", "sm")}>Batafsil ko‘rish</Link>
                         <Link href={`/collections/${col.id}/entries/${r.id}/edit`} className={buttonClass("ghost", "sm")}>Tahrirlash</Link>
                       </div>
                     </Td>

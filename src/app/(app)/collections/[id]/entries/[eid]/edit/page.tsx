@@ -35,7 +35,7 @@ export default async function AdminEditEntry({ params }: { params: Promise<{ id:
         geo={{ scope: e.scope, region_id: e.region_id, district_id: e.district_id ?? "" }}
         geoLabel={where}
         initial={e.answers}
-        adminSave={{ save: adminUpdateEntry.bind(null, e.id), redirectTo: `/collections/${id}/hudud/${e.region_id}#e-${eid}` }}
+        adminSave={{ save: adminUpdateEntry.bind(null, e.id), redirectTo: `/collections/${id}/entries/${eid}` }}
       />
     </>
   );

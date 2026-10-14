@@ -11,6 +11,8 @@ export function parentPath(path: string): string {
   if (/^\/kiritish\/c\/[^/]+\/t\/[^/]+$/.test(path) || /^\/kiritish\/c\/[^/]+\/yangi$/.test(path)) return "/boshqarma";
   if (/^\/kiritish\/c\/[^/]+\/t\/[^/]+\/.+$/.test(path)) return path.replace(/^(\/kiritish\/c\/[^/]+\/t\/[^/]+)\/.*$/, "$1");
   { const h = /^\/collections\/([^/]+)\/hudud\/[^/]+$/.exec(path); if (h) return `/collections/${h[1]}/hududlar`; }
+  { const en = /^(\/collections\/[^/]+)\/entries\/([^/]+)\/edit$/.exec(path); if (en) return `${en[1]}/entries/${en[2]}`; }
+  { const en = /^(\/collections\/[^/]+)\/entries\/[^/]+$/.exec(path); if (en) return `${en[1]}/hududlar`; }
   const m = /^(\/collections\/[^/]+)\/(entries|edit)(\/.*)?$/.exec(path);
   if (m) return m[1];
   const parts = path.split("/").filter(Boolean);
