@@ -2,11 +2,11 @@
 
 import { getProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { issueLoginLink, LINK_DAYS, siteOrigin } from "@/lib/login-links";
+import { fmtTashkent, issueLoginLink, LINK_DAYS, siteOrigin } from "@/lib/login-links";
 import { buildLoginLinksDocx } from "@/lib/report/login-links";
 import { regionOrgName } from "@/lib/brand";
 
-type One = { ok: boolean; url?: string; error?: string };
+type One = { ok: boolean; url?: string; until?: string; error?: string };
 type All = { ok: boolean; count?: number; docx?: string; error?: string };
 
 async function adminOnly() {
@@ -21,7 +21,7 @@ export async function makeLoginLink(userId: string): Promise<One> {
   const r = await issueLoginLink(userId, me.id);
   if (!r.ok) return r;
   await createAdminClient().from("audit_logs").insert({ user_id: me.id, action: "login.link.create", entity_type: "user", entity_id: userId, details: {} });
-  return { ok: true, url: `${await siteOrigin()}/kirish/${r.token}` };
+  return { ok: true, url: `${await siteOrigin()}/kirish/${r.token}`, until: fmtTashkent(r.expiresAt) };
 }
 
 /** Barcha viloyat boshqarmalari uchun havolalar yaratib, Word hujjat (base64) qaytaradi. */
@@ -34,13 +34,13 @@ export async function makeAllLoginLinks(): Promise<All> {
     admin.from("regions").select("id,name,sort_order").order("sort_order"),
   ]);
   const origin = await siteOrigin();
-  const items: { org: string; url: string }[] = [];
+  const items: { org: string; url: string; until: string }[] = [];
   for (const r of regs ?? []) {
     const prof = (profs ?? []).find((x) => x.region_id === r.id);
     if (!prof) continue;
     const res = await issueLoginLink(prof.id as string, me.id);
     if (!res.ok) return { ok: false, error: res.error };
-    items.push({ org: regionOrgName(r.name as string), url: `${origin}/kirish/${res.token}` });
+    items.push({ org: regionOrgName(r.name as string), url: `${origin}/kirish/${res.token}`, until: fmtTashkent(res.expiresAt) });
   }
   if (!items.length) return { ok: false, error: "Viloyat boshqarmalari topilmadi" };
   await admin.from("audit_logs").insert({ user_id: me.id, action: "login.link.create_all", entity_type: "user", entity_id: null, details: { count: items.length } });

@@ -4,7 +4,12 @@ import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LOGIN_DOMAIN } from "@/lib/constants";
 
-export const LINK_DAYS = 60;
+/** Havola amal qilish muddati (kun). Yangi havola yaratilsa, shu foydalanuvchining eskisi darhol bekor bo‘ladi. */
+export const LINK_DAYS = 2;
+
+/** Toshkent vaqti: dd.MM.yyyy HH:mm */
+export const fmtTashkent = (iso: string) =>
+  new Intl.DateTimeFormat("ru-RU", { timeZone: "Asia/Tashkent", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(iso)).replace(",", "");
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 
 /** Saytning haqiqiy manzili (so‘rov qayerdan kelgan bo‘lsa, shu): https://domen */
@@ -16,19 +21,17 @@ export async function siteOrigin(): Promise<string> {
 }
 
 /** Foydalanuvchi uchun yangi havola yaratadi; avvalgilari bekor qilinadi. Havolaning o‘zi faqat shu yerda ko‘rinadi. */
-export async function issueLoginLink(userId: string, createdBy: string): Promise<{ ok: true; token: string } | { ok: false; error: string }> {
+export async function issueLoginLink(userId: string, createdBy: string): Promise<{ ok: true; token: string; expiresAt: string } | { ok: false; error: string }> {
   const admin = createAdminClient();
   const { data: p } = await admin.from("profiles").select("id,role,is_active").eq("id", userId).maybeSingle();
   if (!p || !p.is_active) return { ok: false, error: "Foydalanuvchi topilmadi yoki faol emas" };
   if (p.role !== "region_manager") return { ok: false, error: "Tezkor havola faqat viloyat boshqarmasi uchun yaratiladi" };
   await admin.from("login_links").update({ revoked_at: new Date().toISOString() }).eq("user_id", userId).is("revoked_at", null);
   const token = randomBytes(32).toString("base64url");
-  const { error } = await admin.from("login_links").insert({
-    user_id: userId, token_hash: sha(token), created_by: createdBy,
-    expires_at: new Date(Date.now() + LINK_DAYS * 86_400_000).toISOString(),
-  });
+  const expiresAt = new Date(Date.now() + LINK_DAYS * 86_400_000).toISOString();
+  const { error } = await admin.from("login_links").insert({ user_id: userId, token_hash: sha(token), created_by: createdBy, expires_at: expiresAt });
   if (error) return { ok: false, error: "Havolani saqlab bo‘lmadi (0019 migratsiyasi ishga tushirilganmi?)" };
-  return { ok: true, token };
+  return { ok: true, token, expiresAt };
 }
 
 /** Havola to‘g‘ri bo‘lsa, foydalanuvchining login (email) manzilini qaytaradi va ishlatilganini yozadi. */

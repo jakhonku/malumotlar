@@ -248,3 +248,16 @@ describe("«Orqaga» manzillari", () => {
     expect(parentPath("/events/123")).toBe("/events");
   });
 });
+
+describe("tezkor kirish havolalari Word hujjati", () => {
+  it("muddat (2 kun) va tugash vaqti, har bir viloyat varag‘ida", async () => {
+    const { buildLoginLinksDocx } = await import("../src/lib/report/login-links");
+    const { default: JSZip } = await import("jszip");
+    const buf = await buildLoginLinksDocx([
+      { org: "Samarqand viloyat madaniyat boshqarmasi", url: "https://x.uz/kirish/abc", until: "16.10.2026 14:40" },
+      { org: "Buxoro viloyat madaniyat boshqarmasi", url: "https://x.uz/kirish/def", until: "16.10.2026 14:40" },
+    ], 2);
+    const xml = await (await JSZip.loadAsync(buf)).file("word/document.xml")!.async("string");
+    for (const t of ["https://x.uz/kirish/abc", "https://x.uz/kirish/def", "Havola 2 kun amal qiladi", "16.10.2026 14:40 gacha", "yangi havola yaratgach, bu havola ishlamaydi"]) expect(xml).toContain(t);
+  });
+});

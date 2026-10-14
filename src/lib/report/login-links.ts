@@ -5,7 +5,7 @@ const t = (text: string, o: { size?: number; bold?: boolean; italics?: boolean }
 const p = (text: string, o: { size?: number; bold?: boolean; italics?: boolean; align?: (typeof AlignmentType)[keyof typeof AlignmentType]; after?: number } = {}) =>
   new Paragraph({ alignment: o.align, spacing: { after: o.after ?? 140 }, children: [t(text, o)] });
 
-export interface LinkItem { org: string; url: string }
+export interface LinkItem { org: string; url: string; until: string }
 
 /** Har bir viloyat uchun alohida varaq: tezkor kirish havolasi (login-parolsiz). */
 export async function buildLoginLinksDocx(items: LinkItem[], days: number): Promise<Buffer> {
@@ -17,7 +17,8 @@ export async function buildLoginLinksDocx(items: LinkItem[], days: number): Prom
     p("Tadbirlar ma’lumotlarini yig‘ish tizimiga TEZKOR KIRISH HAVOLASI", { align: AlignmentType.CENTER, after: 300 }),
     p("Havolani brauzerda oching — login va parol so‘ralmasdan tizimga kirasiz:", { size: 26 }),
     p(it.url, { size: 24, bold: true, after: 300 }),
-    p(`Havola ${days} kun amal qiladi. Uni faqat o‘z hududingiz mas’ul xodimiga yuboring: havolaga ega har kim tizimga sizning nomingizdan kira oladi. Havola yo‘qolsa yoki boshqa odamga tushsa, vazirlikka xabar bering — u bekor qilinadi.`, { italics: true, size: 22 }),
+    p(`Havola ${days} kun amal qiladi: ${it.until} gacha (Toshkent vaqti). Muddat o‘tgach yoki vazirlik yangi havola yaratgach, bu havola ishlamaydi — shunda yangi havolani so‘rang.`, { bold: true, size: 24 }),
+    p("Havolani faqat o‘z hududingiz mas’ul xodimiga yuboring: havolaga ega har kim tizimga sizning nomingizdan kira oladi. Havola boshqa odamga tushsa, vazirlikka xabar bering — u bekor qilinadi. Tizimga kirgach ishlayverasiz; havola faqat kirish uchun kerak.", { italics: true, size: 22 }),
   ]);
   const doc = new Document({
     styles: { default: { document: { run: { font: FONT, size: 24 } } } },
@@ -26,7 +27,7 @@ export async function buildLoginLinksDocx(items: LinkItem[], days: number): Prom
       children: [
         p("VILOYATLAR UCHUN TEZKOR KIRISH HAVOLALARI", { bold: true, align: AlignmentType.CENTER, size: 30, after: 200 }),
         p("Maxfiy hujjat: har bir viloyatga faqat o‘z varag‘i yuboriladi (keyingi sahifalarda har biri alohida).", { italics: true, align: AlignmentType.CENTER, size: 22 }),
-        ...items.map((it, i) => p(`${i + 1}. ${it.org}`, { size: 24 })),
+        ...items.map((it, i) => p(`${i + 1}. ${it.org} — ${it.until} gacha`, { size: 24 })),
         new Paragraph({ children: [new PageBreak()] }),
         ...sheets,
       ],

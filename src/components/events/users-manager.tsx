@@ -14,7 +14,7 @@ interface Opt { id: string; name: string }
 interface Dist extends Opt { region_id: string }
 export interface UserRow {
   id: string; username: string; full_name: string; role: Role; region_id: string | null;
-  district_id: string | null; phone: string | null; position?: string | null; avatar_url?: string | null; can_edit_districts: boolean; is_active: boolean;
+  district_id: string | null; phone: string | null; position?: string | null; avatar_url?: string | null; link?: { state: "faol" | "eskirgan" | "bekor"; until: string; uses: number } | null; can_edit_districts: boolean; is_active: boolean;
 }
 
 interface FormState {
@@ -33,17 +33,17 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [pending, start] = useTransition();
-  const [link, setLink] = useState<{ who: string; url: string } | null>(null);
+  const [link, setLink] = useState<{ who: string; url: string; until: string } | null>(null);
 
   function oneLink(u: UserRow) {
     start(async () => {
       const res = await makeLoginLink(u.id);
       if (!res.ok || !res.url) return void toast.error(res.error ?? "Xatolik yuz berdi");
-      setLink({ who: regionName(u.region_id) || u.full_name, url: res.url });
+      setLink({ who: regionName(u.region_id) || u.full_name, url: res.url, until: res.until ?? "" });
     });
   }
   function allLinks() {
-    if (!window.confirm("Barcha viloyat boshqarmalari uchun YANGI tezkor kirish havolalari yaratiladi (eskilari bekor qilinadi). Davom etasizmi?")) return;
+    if (!window.confirm("Barcha viloyat boshqarmalari uchun YANGI tezkor kirish havolalari yaratiladi (2 kun amal qiladi). Avval yuborilgan havolalar (eski Word fayllar) ISHLAMAY QOLADI. Davom etasizmi?")) return;
     start(async () => {
       const res = await makeAllLoginLinks();
       if (!res.ok || !res.docx) return void toast.error(res.error ?? "Xatolik yuz berdi");
@@ -189,7 +189,7 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
               <Button size="sm" onClick={() => { void navigator.clipboard.writeText(link.url); toast.success("Nusxa olindi"); }}><Copy className="h-4 w-4" /> Nusxalash</Button>
               <Button size="sm" variant="ghost" onClick={() => setLink(null)}>Yopish</Button>
             </div>
-            <p className="text-xs text-slate-600">Havolaga ega har kim shu viloyat nomidan kira oladi — faqat mas’ul xodimga yuboring. Yangi havola yaratilsa, eskisi bekor bo‘ladi.</p>
+            <p className="text-xs text-slate-600"><b>{link.until} gacha</b> amal qiladi (Toshkent vaqti). Havolaga ega har kim shu viloyat nomidan kira oladi — faqat mas’ul xodimga yuboring. Yangi havola yaratilsa, eskisi darhol ishlamay qoladi.</p>
           </CardBody>
         </Card>
       )}
@@ -200,7 +200,7 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
           <Button size="sm" variant="outline" onClick={allLinks} disabled={pending}><FileDown className="h-4 w-4" /> Viloyatlar uchun tezkor havolalar (Word)</Button>
         </div>
         <Table>
-          <thead><tr><Th>F.I.Sh.</Th><Th>Login</Th><Th>Rol</Th><Th>Hudud</Th><Th>Telefon</Th><Th>Holati</Th><Th><span className="sr-only">Amallar</span></Th></tr></thead>
+          <thead><tr><Th>F.I.Sh.</Th><Th>Login</Th><Th>Rol</Th><Th>Hudud</Th><Th>Telefon</Th><Th>Tezkor havola</Th><Th>Holati</Th><Th><span className="sr-only">Amallar</span></Th></tr></thead>
           <tbody>
             {filtered.map((u) => (
               <tr key={u.id} className="hover:bg-slate-50">
@@ -219,6 +219,11 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
                 <Td>{ROLE_LABELS[u.role]}{u.can_edit_districts && <div className="text-xs text-slate-500">tuman tahriri: ruxsat</div>}</Td>
                 <Td>{[regionName(u.region_id), districtName(u.district_id)].filter(Boolean).join(" · ") || "—"}</Td>
                 <Td className="whitespace-nowrap">{formatPhone(u.phone)}</Td>
+                <Td className="whitespace-nowrap text-xs">
+                  {u.role !== "region_manager" ? <span className="text-slate-300">—</span> : !u.link ? <span className="text-slate-400">yaratilmagan</span> : u.link.state === "faol"
+                    ? <span><Badge tone="green">faol</Badge><span className="block text-slate-500">{u.link.until} gacha · {u.link.uses} marta kirgan</span></span>
+                    : <span><Badge tone={u.link.state === "bekor" ? "amber" : "red"}>{u.link.state === "bekor" ? "bekor qilingan" : "muddati o‘tgan"}</Badge><span className="block text-slate-500">{u.link.uses} marta kirgan</span></span>}
+                </Td>
                 <Td>{u.is_active ? <Badge tone="green">Faol</Badge> : <Badge tone="red">Faolsiz</Badge>}</Td>
                 <Td>
                   <div className="flex gap-1">
