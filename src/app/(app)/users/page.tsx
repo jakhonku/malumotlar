@@ -18,7 +18,13 @@ export default async function UsersPage() {
     ? (await supabase.from("profiles").select("id,username,full_name,role,region_id,district_id,phone,can_edit_districts,is_active").order("full_name").limit(1000)).data
     : withPhoto;
   const urls = await avatarUrls((data ?? []).map((u) => u.avatar_path as string | null));
-  const users = (data ?? []).map((u) => ({ ...u, avatar_url: u.avatar_path ? urls.get(u.avatar_path as string) ?? null : null }));
+  const order = new Map(regions.map((r) => [r.id, r.sort_order]));
+  const roleRank: Record<string, number> = { super_admin: 0, observer: 1, region_manager: 2, district_manager: 3 };
+  const sorted = (data ?? []).slice().sort((a, b) =>
+    (roleRank[a.role as string] ?? 9) - (roleRank[b.role as string] ?? 9) ||
+    (order.get(a.region_id as string) ?? 999) - (order.get(b.region_id as string) ?? 999) ||
+    String(a.full_name).localeCompare(String(b.full_name)));
+  const users = sorted.map((u) => ({ ...u, avatar_url: u.avatar_path ? urls.get(u.avatar_path as string) ?? null : null }));
   return (
     <>
       <PageHeader title="Foydalanuvchilar" description="Foydalanuvchilarni yarating, hududlarga biriktiring va rollarini boshqaring." />

@@ -127,7 +127,10 @@ export async function CollectionOverview({ collectionId }: { collectionId: strin
       pending: mine.filter((e) => e.status === "submitted").length, pdf: pdfRegions.has(r.id),
     };
   });
-  const ranked = perRegion.slice().sort((a, b) => b.kpi.score - a.kpi.score || a.r.name.localeCompare(b.r.name));
+  // jadval — rasmiy ro‘yxat tartibida (Qoraqalpog‘iston Respublikasi birinchi); KPI o‘rni alohida ko‘rsatiladi
+  const byScore = perRegion.slice().sort((a, b) => b.kpi.score - a.kpi.score);
+  const place = new Map(byScore.map((x, i) => [x.r.id, i + 1]));
+  const ranked = perRegion.slice().sort((a, b) => a.r.sort_order - b.r.sort_order);
   const started = perRegion.filter((x) => x.sent);
   const avgKpi = started.length ? Math.round(started.reduce((a, x) => a + x.kpi.score, 0) / started.length) : 0;
   const finished = perRegion.filter((x) => x.stage.stage === "done").length;
@@ -264,6 +267,7 @@ export async function CollectionOverview({ collectionId }: { collectionId: strin
                 </Td>
                 <Td>
                   <span className={cn("inline-flex min-w-14 items-center justify-center rounded-md px-2 py-1 text-sm font-bold", PILL[x.kpi.level])} title={x.kpi.grade}>{x.sent ? x.kpi.score : "—"}</span>
+                  {x.sent && <span className="mt-0.5 block text-[11px] text-slate-500">reyting: {place.get(x.r.id)}-o‘rin</span>}
                 </Td>
                 <Td><Link href={`${base}/hudud/${x.r.id}`} className={buttonClass("outline", "sm")}>Tekshirish</Link></Td>
               </tr>
