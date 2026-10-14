@@ -16,8 +16,8 @@ export default async function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-900 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center text-white">
-          <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-lg">
-            <Emblem size={88} />
+          <div className="mx-auto mb-4 flex h-36 w-36 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg">
+            <Emblem size={144} />
           </div>
           <p className="text-xs uppercase tracking-widest text-slate-300">O‘zbekiston Respublikasi</p>
           <h1 className="mt-1 text-2xl font-bold">Madaniyat vazirligi</h1>

@@ -106,8 +106,8 @@ export function Sidebar({
 
   const brand = (
     <div className="flex items-center gap-3 border-b border-white/10 px-4 py-4">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white">
-        <Emblem size={34} />
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white">
+        <Emblem size={56} />
       </div>
       <div className="leading-tight">
         <p className="text-sm font-bold text-white">Madaniyat vazirligi</p>
@@ -119,7 +119,7 @@ export function Sidebar({
   return (
     <>
       <header className="app-header sticky top-0 z-30 flex items-center justify-between bg-slate-900 px-4 py-3 text-white lg:hidden">
-        <span className="flex items-center gap-2 text-sm font-bold"><span className="flex h-8 w-8 items-center justify-center rounded bg-white"><Emblem size={22} /></span> Madaniyat vazirligi</span>
+        <span className="flex items-center gap-2 text-sm font-bold"><span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded bg-white"><Emblem size={36} /></span> Madaniyat vazirligi</span>
         <button aria-label={open ? "Menyuni yopish" : "Menyuni ochish"} onClick={() => setOpen((v) => !v)} className="cursor-pointer rounded p-1 hover:bg-white/10">
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>

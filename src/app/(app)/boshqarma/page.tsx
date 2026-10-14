@@ -96,7 +96,7 @@ export default async function RegionPanel() {
     <div className="space-y-6">
       <header className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-center gap-4 border-b-4 border-blue-800 bg-slate-900 px-5 py-4 text-white">
-          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-white"><Emblem size={46} /></span>
+          <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white"><Emblem size={80} /></span>
           <div className="leading-snug">
             <p className="text-xs font-semibold tracking-wide text-slate-300">{MINISTRY_FULL}</p>
             <p className="text-[11px] text-slate-400">{DEPARTMENT_NAME}</p>
