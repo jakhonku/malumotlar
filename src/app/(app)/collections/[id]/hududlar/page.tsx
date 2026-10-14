@@ -8,7 +8,6 @@ import { regionSelf } from "@/lib/brand";
 import { fmtDateTime } from "@/lib/format";
 import { Button, buttonClass, Card, EmptyState, Select, Table, Td, Th } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { ExportBar } from "@/components/collections/export-bar";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +73,6 @@ export default async function IncomingPage({ params, searchParams }: { params: P
         <Link href={`/collections/${col.id}/hududlar`} className={buttonClass("outline")}>Tozalash</Link>
       </form>
 
-      <div className="mb-4"><ExportBar collectionId={col.id} /></div>
 
       <Card>
         <div className="border-b border-slate-200 px-4 py-3 text-sm text-slate-600">
