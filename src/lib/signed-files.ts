@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { regionSelf } from "@/lib/brand";
 
 import { SIGNED_BUCKET } from "@/lib/constants";
 export const BUCKET = SIGNED_BUCKET;
@@ -41,4 +42,69 @@ export async function listSignedFiles(collectionId: string, filter?: { regionId?
     path: i.path, regionId: i.regionId, unit: i.unit, size: i.size, by: i.by,
     uploadedAt: new Date(Number.isFinite(i.ts) ? i.ts : Date.now()), url: urls?.[idx]?.signedUrl ?? "",
   }));
+}
+
+const RETURNED = "returned";
+
+/** Hududning joriy imzolangan PDF larini arxiv papkasiga ko‘chiradi (o‘chirilmaydi) — hudud qayta yuklashi kerak bo‘ladi. */
+export async function archiveSignedFiles(collectionId: string, regionId: string): Promise<number> {
+  const files = await listSignedFiles(collectionId, { regionId });
+  const admin = createAdminClient();
+  let n = 0;
+  for (const f of files) {
+    const { error } = await admin.storage.from(BUCKET).move(f.path, `${collectionId}/${RETURNED}/${f.path.split("/").pop()}`);
+    if (!error) n++;
+  }
+  return n;
+}
+
+/** Vazirlik oxirgi marta qaytargan PDF haqida ma’lumot (sabab, vaqt). */
+export async function getSignedReturn(collectionId: string, regionId: string): Promise<{ reason: string; at: Date } | null> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("audit_logs").select("details,created_at")
+    .eq("action", "signed.return").eq("entity_id", regionId).filter("details->>collection_id", "eq", collectionId)
+    .order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!data) return null;
+  return { reason: String((data.details as { reason?: string }).reason ?? ""), at: new Date(data.created_at as string) };
+}
+
+export interface SignedReadiness {
+  total: number;
+  approved: number;
+  missing: string[];
+  waiting: number;
+  ready: boolean;
+  message: string | null;
+  /** yozuvlardagi eng oxirgi o‘zgarish vaqti (PDF eskirganini aniqlash uchun) */
+  lastChangeAt: Date | null;
+}
+
+/** Imzolangan PDF yuborish sharti: barcha hudud (viloyat + tuman/shaharlar) kiritilgan va vazirlik tomonidan TASDIQLANGAN bo‘lishi. */
+export async function signedReadiness(collectionId: string, regionId: string): Promise<SignedReadiness> {
+  const admin = createAdminClient();
+  const [{ data: col }, { data: reg }, { data: ds }, { data: ents }] = await Promise.all([
+    admin.from("collections").select("audience").eq("id", collectionId).maybeSingle(),
+    admin.from("regions").select("name").eq("id", regionId).maybeSingle(),
+    admin.from("districts").select("id,name").eq("region_id", regionId).eq("is_active", true).limit(500),
+    admin.from("collection_entries").select("scope,district_id,status,updated_at").eq("collection_id", collectionId).eq("region_id", regionId).is("deleted_at", null).limit(2000),
+  ]);
+  const audience = (col?.audience ?? "both") as "both" | "regional" | "district";
+  const entries = ents ?? [];
+  const units = [
+    ...(audience !== "district" ? [{ key: "regional", name: regionSelf(reg?.name ?? ""), has: (e: (typeof entries)[number]) => e.scope === "regional" }] : []),
+    ...(audience !== "regional" ? (ds ?? []).map((d) => ({ key: d.id, name: d.name, has: (e: (typeof entries)[number]) => e.district_id === d.id })) : []),
+  ];
+  const missing = units.filter((u) => !entries.some(u.has)).map((u) => u.name);
+  const approved = units.filter((u) => { const l = entries.filter(u.has); return l.length > 0 && l.every((e) => e.status === "approved"); }).length;
+  const waiting = units.length - missing.length - approved;
+  const ready = units.length > 0 && missing.length === 0 && waiting === 0;
+  let message: string | null = null;
+  if (!ready) {
+    message = missing.length
+      ? `Hali ma’lumoti kiritilmagan hududlar: ${missing.slice(0, 6).join(", ")}${missing.length > 6 ? ` va yana ${missing.length - 6} ta` : ""}.`
+      : `${waiting} ta hudud ma’lumoti hali vazirlik tomonidan tasdiqlanmagan.`;
+    message += " Imzolangan PDF ni barcha hudud ma’lumoti kiritilib, vazirlik tasdiqlagandan keyin yuborish mumkin.";
+  }
+  const lastChange = entries.reduce<number>((m, e) => Math.max(m, new Date(e.updated_at as string).getTime()), 0);
+  return { total: units.length, approved, missing, waiting, ready, message, lastChangeAt: lastChange ? new Date(lastChange) : null };
 }

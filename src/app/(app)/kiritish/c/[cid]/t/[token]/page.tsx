@@ -1,7 +1,6 @@
 import { regionSelf } from "@/lib/brand";
-import { missingMessage } from "@/lib/completeness";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import { entryUnit, getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -11,11 +10,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { requireManagerToken } from "@/lib/manager-guard";
 import { EntrySubmit } from "@/components/collections/entry-submit";
 import { EntryDelete } from "@/components/collections/entry-delete";
-import { SignedUpload } from "@/components/collections/signed-upload";
-import { listSignedFiles } from "@/lib/signed-files";
-import { fmtDateTime } from "@/lib/format";
-import { CardBody } from "@/components/ui/primitives";
-import { FileDown, FileSpreadsheet } from "lucide-react";
+import { FileCheck2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +19,8 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
   await requireManagerToken(cid, token);
   const col = await getCollection(cid);
   const group = col ? await getEntryGroup(cid, token) : null;
-  if (!col || !group) notFound();
+  if (!col) redirect("/boshqarma");
+  if (!group) redirect(`/kiritish/c/${col.id}`);
 
   const open = isOpen(col);
   const regionMode = group.groupMode === "region";
@@ -45,22 +41,10 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
     for (const d of ds ?? []) checklist.push({ key: d.id, name: d.name, unit: d.id, ...stat((e) => e.district_id === d.id) });
     if (col.audience === "regional") checklist = [];
   }
-  const unitKey = group.groupMode === "region" ? "boshqarma" : group.districtId ?? "viloyat";
-  const files = await listSignedFiles(col.id, { regionId: group.regionId, unit: unitKey }).catch(() => []);
-  const exportHref = (f: string) => `/kiritish/export?c=${col.id}&t=${token}&format=${f}`;
   const filled = checklist.filter((r) => r.count > 0).length;
   const pending = group.entries.filter((e) => e.status === "draft" || e.status === "revision");
   const base = `/kiritish/c/${col.id}`;
   const label = col.entry_label;
-  const unfilled = regionMode ? checklist.length - filled : 0;
-  const uploadBlock =
-    group.entries.length === 0
-      ? "Avval ma’lumot kiriting va yuboring — shundan keyin imzolangan PDF ni yuborish mumkin bo‘ladi."
-      : regionMode && checklist.some((r) => r.count === 0)
-        ? missingMessage(checklist.filter((r) => r.count === 0).map((r) => r.name))
-        : pending.length > 0
-          ? `Hali yuborilmagan yozuvlar bor (${pending.length} ta). Avval hammasini «Yuborish» orqali yuboring, so‘ng imzolangan PDF ni yuklang.`
-          : null;
 
   return (
     <div className="space-y-5">
@@ -163,45 +147,12 @@ export default async function CollectionUnitPage({ params }: { params: Promise<{
         )}
       </div>
 
-      <Card className="border-blue-300">
-        <CardHeader><CardTitle>Tasdiqlash: yuklab oling → imzolang → PDF yuboring</CardTitle></CardHeader>
-        <CardBody className="space-y-4">
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-700">
-            <li>Barcha tuman/shaharlar (va o‘zingiz) ma’lumotini platformada kiriting va <b>«Yuborish»</b> orqali yuboring.</li>
-            <li><b>Word</b> (yoki Excel) ko‘rinishida yuklab oling va chop eting.</li>
-            <li>Rahbar imzosi va muhr qo‘ying, <b>skanerlab PDF</b> qiling.</li>
-            <li>Imzolangan PDF ni shu yerdan yuboring — vazirlik uni ko‘radi.</li>
-          </ol>
-          {unfilled > 0 && (
-            <p className="rounded-md bg-amber-50 p-2 text-sm text-amber-900">Diqqat: hali ma’lumot kiritilmagan hudud/tuman: <b>{unfilled}</b> ta (yuqoridagi ro‘yxatga qarang).</p>
-          )}
-          <div className="flex flex-wrap gap-2">
-            <a href={exportHref("docx")} className={buttonClass("success", "lg")}><FileDown className="h-5 w-5" /> Word yuklab olish</a>
-            <a href={exportHref("xlsx")} className={buttonClass("outline", "lg")}><FileSpreadsheet className="h-5 w-5" /> Excel yuklab olish</a>
-          </div>
-          <div className="border-t border-slate-200 pt-4">
-            <p className="mb-2 text-sm font-medium text-slate-800">Imzolangan hujjatni (PDF) yuborish</p>
-            {uploadBlock ? (
-              <p role="status" className="rounded-md bg-amber-50 p-3 text-sm text-amber-900">{uploadBlock}</p>
-            ) : (
-              <SignedUpload collectionId={col.id} token={token} />
-            )}
-            {files.length > 0 ? (
-              <ul className="mt-3 space-y-1 text-sm">
-                {files.map((f) => (
-                  <li key={f.path} className="flex flex-wrap items-center gap-2">
-                    <Badge tone="green">Yuborilgan</Badge>
-                    <a href={f.url} className="text-blue-800 underline" target="_blank" rel="noreferrer">Imzolangan hujjat · {fmtDateTime(f.uploadedAt.toISOString())}</a>
-                    {f.size > 0 && <span className="text-xs text-slate-500">{(f.size / 1024 / 1024).toFixed(1)} MB</span>}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-sm text-amber-800">Imzolangan hujjat hali yuborilmagan.</p>
-            )}
-          </div>
-        </CardBody>
-      </Card>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-300 bg-blue-50/50 p-4">
+        <p className="max-w-2xl text-sm text-slate-700">
+          Word/Excel yuklab olish va <b>imzolangan PDF</b> yuborish alohida sahifada. PDF ni barcha tuman/shaharlar ma’lumoti vazirlik tomonidan tasdiqlangandan keyin yuborasiz.
+        </p>
+        <Link href="/pdf-yuborish" className={buttonClass("default", "lg")}><FileCheck2 className="h-5 w-5" /> Imzolangan PDF sahifasi</Link>
+      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  Bell, ClipboardCheck, FileCheck2, MessageSquare, Table2, ClipboardList, FileText, History, LayoutDashboard, ListChecks, LogOut, Map, Menu,
+  Bell, ClipboardCheck, FileCheck2, MessageSquare, ClipboardList, FileText, History, LayoutDashboard, ListChecks, LogOut, Map, Menu,
   Mic2, PlusCircle, Settings, Users, UserSquare2, X, Building2, MapPinned,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
@@ -21,12 +21,11 @@ const MINISTRY_REGION: Role[] = ["super_admin", "observer"];
 
 const NAV: NavItem[] = [
   { href: "/boshqarma", label: "Boshqarma paneli", icon: LayoutDashboard, roles: ["region_manager"] },
-  { href: "/", label: "Boshqaruv paneli", icon: LayoutDashboard, roles: ["super_admin", "observer"] },
+  { href: "/", label: "Ma’lumot yig‘ishlar", icon: ClipboardList, roles: ["super_admin", "observer"] },
   { href: "/", label: "Bosh sahifa", icon: LayoutDashboard, roles: ["district_manager"] },
-  { href: "/malumotlar", label: "Kelgan ma’lumotlar", icon: Table2, roles: ["super_admin", "observer"] },
-  { href: "/imzolangan", label: "Imzolangan PDF", icon: FileCheck2, roles: ["super_admin", "observer"] },
+  { href: "/pdf-yuborish", label: "Imzolangan PDF", icon: FileCheck2, roles: ["region_manager"] },
   { href: "/chat", label: "Chat", icon: MessageSquare, roles: ["super_admin", "region_manager"] },
-  { href: "/collections", label: "Ma’lumot yig‘ish", icon: ClipboardList, roles: ["super_admin", "observer", "region_manager"] },
+  { href: "/collections", label: "Ma’lumot yig‘ish", icon: ClipboardList, roles: ["region_manager"] },
   { href: "/events", label: "Barcha tadbirlar", icon: ListChecks, roles: ["district_manager"] },
   { href: "/events/regional", label: "Viloyat asosiy tadbirlari", icon: Building2, roles: [] },
   { href: "/events/district", label: "Tuman/shahar tadbirlari", icon: MapPinned, roles: [] },
@@ -48,7 +47,8 @@ export function Sidebar({
   const items = NAV.filter((n) => n.roles.includes(role));
   const canCreate = role === "district_manager"; // vazirlik tadbirni o‘zi kiritmaydi — forma yaratib, hududlardan yig‘adi
 
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || (href !== "/events" && pathname.startsWith(href + "/")));
+  const ministry = role === "super_admin" || role === "observer";
+  const isActive = (href: string) => (href === "/" ? pathname === "/" || (ministry && pathname.startsWith("/collections")) : pathname === href || (href !== "/events" && pathname.startsWith(href + "/")));
 
   const nav = (
     <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="Asosiy menyu">

@@ -1,7 +1,7 @@
 import { regionSelf } from "@/lib/brand";
 import { requireManagerToken } from "@/lib/manager-guard";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
 import { DynamicForm, type GeoChooser } from "@/components/collections/dynamic-form";
 
@@ -13,7 +13,9 @@ export default async function CollectionEditEntry({ params }: { params: Promise<
   const col = await getCollection(cid);
   const group = col ? await getEntryGroup(cid, token) : null;
   const entry = group?.entries.find((e) => e.id === eid);
-  if (!col || !group || !entry) notFound();
+  if (!col) redirect("/boshqarma");
+  if (!group) redirect(`/kiritish/c/${col.id}`);
+  if (!entry) redirect(`/kiritish/c/${col.id}/t/${token}`);
   if (!isOpen(col) || entry.status === "approved") redirect(`/kiritish/c/${col.id}/t/${token}`);
 
   const chooser: GeoChooser | undefined =

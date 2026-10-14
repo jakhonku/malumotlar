@@ -1,7 +1,7 @@
 import { regionSelf } from "@/lib/brand";
 import { requireManagerToken } from "@/lib/manager-guard";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { getCollection, getEntryGroup, isOpen, unitLabel } from "@/lib/public-collection";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DynamicForm, type GeoChooser } from "@/components/collections/dynamic-form";
@@ -16,7 +16,8 @@ export default async function CollectionAddEntry({
   const sp = await searchParams;
   const col = await getCollection(cid);
   const group = col ? await getEntryGroup(cid, token) : null;
-  if (!col || !group) notFound();
+  if (!col) redirect("/boshqarma");
+  if (!group) redirect(`/kiritish/c/${col.id}`);
   const regionMode = group.groupMode === "region";
   if (!isOpen(col) || (!col.allow_multiple && !regionMode)) redirect(`/kiritish/c/${col.id}/t/${token}`);
 

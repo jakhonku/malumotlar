@@ -11,6 +11,7 @@ import { EntryReview } from "@/components/collections/entry-review";
 import { ApproveRegion } from "@/components/collections/approve-region";
 import { ExportBar } from "@/components/collections/export-bar";
 import { listSignedFiles } from "@/lib/signed-files";
+import { ReturnSigned } from "@/components/collections/return-signed";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -68,7 +69,10 @@ export default async function RegionReviewPage({ params }: { params: Promise<{ i
         {last ? (
           <>
             <p><b className="text-emerald-900">Imzolangan hujjat yuborilgan.</b> Yuborgan: {sender} · {fmtDateTime(last.uploadedAt.toISOString())}</p>
-            <a href={last.url} target="_blank" rel="noreferrer" className={buttonClass("success", "sm")}>PDF ni ochish</a>
+            <div className="flex flex-wrap gap-2">
+              <a href={last.url} target="_blank" rel="noreferrer" className={buttonClass("success", "sm")}>PDF ni ochish</a>
+              {admin && <ReturnSigned collectionId={col.id} regionId={rid} regionName={region.name} />}
+            </div>
           </>
         ) : (
           <p><b className="text-red-900">Imzolangan hujjat (PDF) hali yuborilmagan.</b> Viloyat boshqarmasi hammasini kiritib, imzolab yuborgach shu yerda ko‘rinadi.</p>

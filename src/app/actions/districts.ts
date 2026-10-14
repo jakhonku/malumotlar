@@ -61,3 +61,25 @@ export async function renameMyDistrict(id: string, name: string, type: "tuman" |
   revalidatePath("/boshqarma");
   return { ok: true };
 }
+
+/** Mavjud bo‘lmagan/xato qo‘shilgan tuman-shaharni ro‘yxatdan chiqaradi. Faqat unga hech qanday ma’lumot kiritilmagan bo‘lsa. */
+export async function hideMyDistrict(id: string): Promise<{ ok: boolean; error?: string }> {
+  const me = await getManager();
+  if (!me) return { ok: false, error: "Tizimga kiring" };
+  const admin = createAdminClient();
+  const { data: cur } = await admin.from("districts").select("id,name,region_id,is_active").eq("id", id).maybeSingle();
+  if (!cur || cur.region_id !== me.region_id) return { ok: false, error: "Bu tuman/shahar sizning hududingizga tegishli emas" };
+  const [{ count: c1 }, { count: c2 }] = await Promise.all([
+    admin.from("collection_entries").select("id", { count: "exact", head: true }).eq("district_id", id).is("deleted_at", null),
+    admin.from("events").select("id", { count: "exact", head: true }).eq("district_id", id),
+  ]);
+  if ((c1 ?? 0) + (c2 ?? 0) > 0) return { ok: false, error: "Bu tuman/shaharga ma’lumot kiritilgan — chiqarib bo‘lmaydi. Nomi xato bo‘lsa, uni tahrirlang." };
+  const { error } = await admin.from("districts").update({ is_active: false }).eq("id", id);
+  if (error) return { ok: false, error: "Amalni bajarib bo‘lmadi" };
+  await admin.from("audit_logs").insert({
+    user_id: me.id, action: "territory.district.hide", entity_type: "territory", entity_id: id,
+    details: { name: cur.name, region_id: me.region_id, source: "region_panel" },
+  });
+  revalidatePath("/boshqarma");
+  return { ok: true };
+}

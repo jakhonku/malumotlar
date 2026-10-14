@@ -10,7 +10,7 @@ const TOP = new Set(["/", "/boshqarma", "/collections", "/malumotlar", "/chat", 
 export function parentPath(path: string): string {
   if (/^\/kiritish\/c\/[^/]+\/t\/[^/]+$/.test(path) || /^\/kiritish\/c\/[^/]+\/yangi$/.test(path)) return "/boshqarma";
   if (/^\/kiritish\/c\/[^/]+\/t\/[^/]+\/.+$/.test(path)) return path.replace(/^(\/kiritish\/c\/[^/]+\/t\/[^/]+)\/.*$/, "$1");
-  if (/^\/collections\/[^/]+\/hudud\/[^/]+$/.test(path)) return "/malumotlar";
+  { const h = /^\/collections\/([^/]+)\/hudud\/[^/]+$/.exec(path); if (h) return `/collections/${h[1]}/hududlar`; }
   const m = /^(\/collections\/[^/]+)\/(entries|edit)(\/.*)?$/.exec(path);
   if (m) return m[1];
   const parts = path.split("/").filter(Boolean);
@@ -21,7 +21,7 @@ export function parentPath(path: string): string {
 export function BackButton() {
   const pathname = usePathname();
   const router = useRouter();
-  if (TOP.has(pathname)) return null;
+  if (TOP.has(pathname) || /^\/collections\/[^/]+(\/(hududlar|pdf|hisobot|edit))?$/.test(pathname)) return null;
 
   function back() {
     const sameSite = typeof document !== "undefined" && document.referrer.startsWith(window.location.origin);

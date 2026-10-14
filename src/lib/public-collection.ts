@@ -12,7 +12,9 @@ export async function getCollection(id: string): Promise<CollectionRow | null> {
   return (data as CollectionRow | null) ?? null;
 }
 
-export const isOpen = (c: CollectionRow) => c.is_active && (!c.deadline || c.deadline >= new Date().toISOString().slice(0, 10));
+/** Yig‘ish qabul qilinadimi: muddat «yumshoq» — o‘tgandan keyin ham ma’lumot qabul qilinadi (kechikish KPI da hisobga olinadi), yopish faqat is_active orqali. */
+export const isOpen = (c: CollectionRow) => c.is_active;
+export const isLate = (c: CollectionRow) => !!c.deadline && c.deadline < new Date().toISOString().slice(0, 10);
 
 export interface EntryGroup {
   entries: EntryRow[];

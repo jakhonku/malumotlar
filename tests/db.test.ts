@@ -71,7 +71,7 @@ beforeAll(async () => {
     alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
     alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
   `);
-  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "migrations/0009_public_delete.sql", "migrations/0011_chat_and_hide_drafts.sql", "migrations/0013_edit_submitted.sql", "migrations/0014_admin_edit.sql", "seed.sql"]) {
+  for (const f of ["migrations/0001_schema.sql", "migrations/0002_rls.sql", "migrations/0003_functions.sql", "migrations/0004_export_audit.sql", "migrations/0005_public_entry.sql", "migrations/0006_collections.sql", "migrations/0007_simplify_event_fields.sql", "migrations/0008_region_groups.sql", "migrations/0009_public_delete.sql", "migrations/0011_chat_and_hide_drafts.sql", "migrations/0013_edit_submitted.sql", "migrations/0014_admin_edit.sql", "migrations/0016_soft_deadline.sql", "seed.sql", "migrations/0015_fix_districts.sql"]) {
     await db.exec(sql(f));
   }
   await db.exec("grant all on all tables in schema public to service_role;");
@@ -508,7 +508,7 @@ describe("umumiy ma’lumot yig‘ish (collections)", () => {
     { key: "nomi", label: "Nomi", type: "text", required: true },
     { key: "soni", label: "Soni", type: "number", required: false },
   ];
-  let colId: string, singleId: string, regionalOnlyId: string, closedId: string;
+  let colId: string, singleId: string, regionalOnlyId: string, closedId: string, lateId: string;
 
   const asService = async <T,>(fn: () => Promise<T>) => {
     await db.exec("set role service_role");
@@ -534,7 +534,8 @@ describe("umumiy ma’lumot yig‘ish (collections)", () => {
     colId = await ins("Yangi yil tadbirlari", "both", true);
     singleId = await ins("Bitta yozuv", "both", false);
     regionalOnlyId = await ins("Faqat viloyat", "regional", true);
-    closedId = await ins("Yopiq yig‘ish", "both", true, true, "2000-01-01");
+    closedId = await ins("Yopiq yig‘ish", "both", true, false, "2000-01-01");
+    lateId = await ins("Muddati o‘tgan, ochiq", "both", true, true, "2000-01-01");
   });
 
   it("faqat administrator yig‘ish yarata oladi; boshqalar o‘qiydi", async () => {
@@ -564,6 +565,11 @@ describe("umumiy ma’lumot yig‘ish (collections)", () => {
     expect(await fail(save(colId, null, hex("3"), null, geo({ region_id: buxoro })))).toContain("viloyatga tegishli emas");
     expect(await fail(save(regionalOnlyId, null, hex("4"), null, geo()))).toContain("mo'ljallanmagan");
     expect(await fail(save(closedId, null, hex("5"), null, geo()))).toContain("yopilgan");
+  });
+
+  it("muddat o‘tgandan keyin ham ma’lumot qabul qilinadi (yumshoq muddat); yopish faqat is_active orqali", async () => {
+    const id = await save(lateId, null, hex("7"), null, geo());
+    expect(id).toBeTruthy();
   });
 
   it("allow_multiple=false: hudud faqat bitta yozuv kirita oladi", async () => {

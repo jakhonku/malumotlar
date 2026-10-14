@@ -5,10 +5,8 @@ import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEventPayload, normalizeDistrictName, toFieldErrors } from "@/lib/event-payload";
 import { validateAnswers, type CollectionRow } from "@/lib/collections";
-import { BUCKET, ensureBucket, signedPath } from "@/lib/signed-files";
+import { BUCKET, ensureBucket, signedPath, signedReadiness } from "@/lib/signed-files";
 import { deriveToken } from "@/lib/region-token";
-import { missingMessage, missingUnits } from "@/lib/completeness";
-import { regionSelf } from "@/lib/brand";
 import { getManager } from "@/lib/manager-guard";
 import { draftSchema, submitSchema, type EventFormValues } from "@/lib/validators";
 
@@ -239,40 +237,19 @@ export async function deletePublicEntry(collectionId: string, token: string, ent
   return error ? { ok: false, error: dbMessage(error) } : { ok: true };
 }
 
-/** Imzolangan PDF ni yuklash uchun bir martalik manzil (token egasi uchun). Fayl brauzerdan to'g'ridan-to'g'ri saqlash joyiga yuklanadi. */
+/** Imzolangan PDF ni yuklash uchun bir martalik manzil (hudud mas'uli). Faqat barcha hudud ma'lumoti TASDIQLANGANDAN keyin. */
 export async function createSignedUpload(
   collectionId: string,
-  token: string,
 ): Promise<{ ok: boolean; path?: string; uploadToken?: string; error?: string }> {
-  const auth = await authorize(collectionId, token);
+  const auth = await authorize(collectionId, null);
   if (!auth.ok) return { ok: false, error: auth.error };
+  const ready = await signedReadiness(collectionId, auth.region);
+  if (!ready.ready) return { ok: false, error: ready.message ?? "Imzolangan PDF hozircha yuborilmaydi" };
   const admin = createAdminClient();
-  const { data } = await admin
-    .from("collection_entries")
-    .select("region_id,district_id,scope,group_mode,status")
-    .eq("collection_id", collectionId)
-    .eq("edit_token_hash", sha256(token))
-    .is("deleted_at", null)
-    .order("created_at")
-    .limit(500);
-  const first = data?.[0];
-  if (!first) return { ok: false, error: "Havola noto‘g‘ri yoki hali ma’lumot kiritilmagan" };
-  if (data.some((e) => e.status === "draft" || e.status === "revision"))
-    return { ok: false, error: "Avval barcha yozuvlarni «Yuborish» orqali yuboring, so‘ng imzolangan PDF ni yuklang." };
-  // barcha hudud (viloyatning o'zi va tuman/shaharlar) kiritilgan bo'lishi shart
-  const col = await loadCollection(collectionId);
-  if (col && first.group_mode === "region") {
-    const [{ data: ds }, { data: reg }] = await Promise.all([
-      admin.from("districts").select("id,name").eq("region_id", first.region_id).eq("is_active", true).limit(500),
-      admin.from("regions").select("name").eq("id", first.region_id).maybeSingle(),
-    ]);
-    const miss = missingUnits(col.audience, regionSelf(reg?.name ?? ""), ds ?? [], data);
-    if (miss.length) return { ok: false, error: missingMessage(miss) };
-  }
-  const unit = first.group_mode === "region" ? "boshqarma" : first.district_id ?? "viloyat";
   await ensureBucket();
-  const path = signedPath(collectionId, first.region_id, unit, (await getManager())?.id);
+  const path = signedPath(collectionId, auth.region, "boshqarma", (await getManager())?.id);
   const { data: up, error } = await admin.storage.from(BUCKET).createSignedUploadUrl(path);
   if (error || !up) return { ok: false, error: "Yuklashni boshlab bo‘lmadi. Qayta urinib ko‘ring." };
   return { ok: true, path: up.path, uploadToken: up.token };
 }
+

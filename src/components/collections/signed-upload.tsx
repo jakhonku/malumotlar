@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/primitives";
 
 const MAX = 20 * 1024 * 1024;
 
-export function SignedUpload({ collectionId, token }: { collectionId: string; token: string }) {
+export function SignedUpload({ collectionId }: { collectionId: string }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -26,7 +26,7 @@ export function SignedUpload({ collectionId, token }: { collectionId: string; to
 
     setBusy(true);
     try {
-      const res = await createSignedUpload(collectionId, token);
+      const res = await createSignedUpload(collectionId);
       if (!res.ok || !res.path || !res.uploadToken) return void toast.error(res.error ?? "Xatolik yuz berdi");
       const { error } = await createClient().storage.from(SIGNED_BUCKET).uploadToSignedUrl(res.path, res.uploadToken, file, { contentType: "application/pdf" });
       if (error) return void toast.error("Faylni yuklab bo‘lmadi. Qayta urinib ko‘ring.");

@@ -4,8 +4,8 @@ import { CalendarClock, Check, FileDown, FileSpreadsheet, MessageSquare, Plus } 
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { deriveToken } from "@/lib/region-token";
-import { getEntryGroup, isOpen } from "@/lib/public-collection";
-import { listSignedFiles } from "@/lib/signed-files";
+import { getEntryGroup, isLate, isOpen } from "@/lib/public-collection";
+import { getSignedReturn, listSignedFiles } from "@/lib/signed-files";
 import type { CollectionRow } from "@/lib/collections";
 import { fmtDate } from "@/lib/format";
 import { DEPARTMENT_NAME, MINISTRY_FULL, regionOrgName, regionSelf } from "@/lib/brand";
@@ -82,14 +82,15 @@ export default async function RegionPanel() {
       const entered = filled === total && total > 0;
       const sentAll = entered && pending === 0;
       const signed = files.length > 0;
+      const signedReturn = signed ? null : await getSignedReturn(c.id, rid).catch(() => null);
       const steps = [
         { title: "Ma’lumot kiritish", note: `${filled} / ${total} hudud`, done: entered },
         { title: "Yuborish", note: pending ? `${pending} tasi yuborilmagan` : sentAll ? "hammasi yuborilgan" : "kutilmoqda", done: sentAll },
         { title: "Word → imzo → skaner", note: "yuklab olib imzolang", done: signed },
-        { title: "Imzolangan PDF", note: signed ? "yuborilgan" : "yuboring", done: signed },
+        { title: "Imzolangan PDF", note: signed ? "yuborilgan" : signedReturn ? "qaytarilgan — qayta yuboring" : "yuboring", done: signed },
       ];
       const current = steps.findIndex((s) => !s.done);
-      return { c, token, hasGroup: !!group, units, steps, current, returned, entries: entries.length, workHref: group ? `${base}/t/${token}` : startHref };
+      return { c, token, hasGroup: !!group, signedReturn, units, steps, current, returned, entries: entries.length, workHref: group ? `${base}/t/${token}` : startHref };
     }),
   );
 
@@ -120,7 +121,7 @@ export default async function RegionPanel() {
       {cards.length === 0 ? (
         <Card><EmptyState title="Hozircha ochiq ma’lumot yig‘ish yo‘q" text="Vazirlik yangi yig‘ishni ochganda shu yerda ko‘rinadi." /></Card>
       ) : (
-        cards.map(({ c, token, hasGroup, units, steps, current, returned, entries, workHref }) => (
+        cards.map(({ c, token, hasGroup, signedReturn, units, steps, current, returned, entries, workHref }) => (
           <Card key={c.id}>
             <CardBody className="space-y-5">
               <div className="flex flex-wrap items-start justify-between gap-2">
@@ -130,7 +131,7 @@ export default async function RegionPanel() {
                 </div>
                 {c.deadline && (
                   <span className="flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-900">
-                    <CalendarClock className="h-4 w-4" /> Muddat: {fmtDate(c.deadline)}
+                    <CalendarClock className="h-4 w-4" /> Muddat: {fmtDate(c.deadline)}{isLate(c) && " — o‘tgan, tezroq topshiring"}
                   </span>
                 )}
               </div>
@@ -148,6 +149,12 @@ export default async function RegionPanel() {
                   </li>
                 ))}
               </ol>
+
+              {signedReturn && (
+                <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-900">
+                  Vazirlik imzolangan PDF ni qaytardi. Sabab: {signedReturn.reason} — tuzatib, imzolangan PDF ni qayta yuboring.
+                </p>
+              )}
 
               {returned > 0 && (
                 <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-900">

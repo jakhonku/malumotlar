@@ -1,28 +1,29 @@
 import Link from "next/link";
-import { CheckCircle2, Clock3, FileCheck2, FileText, MapPinned, Table2, Undo2 } from "lucide-react";
+import { notFound } from "next/navigation";
+import { CheckCircle2, Clock3, FileCheck2, MapPinned, Undo2 } from "lucide-react";
 import { subDays, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { getRegions } from "@/lib/queries";
 import { listSignedFiles } from "@/lib/signed-files";
 import type { CollectionRow } from "@/lib/collections";
-import { fmtDate, fmtDateTime } from "@/lib/format";
+import { fmtDateTime } from "@/lib/format";
 import { regionSelf } from "@/lib/brand";
 import { getProfile } from "@/lib/auth";
 import { DeadlineTimer } from "@/components/deadline-timer";
-import { LEVEL_ORDER, rateRegion, type Level } from "@/lib/performance";
-import { Badge, buttonClass, Card, CardBody, CardHeader, CardTitle, EmptyState, PageHeader, Table, Td, Th, cn } from "@/components/ui/primitives";
+import { rateRegion, type Level } from "@/lib/performance";
+import { kpiScore, stageOf, type PdfState } from "@/lib/kpi";
+import { Badge, buttonClass, Card, CardBody, CardHeader, CardTitle, EmptyState, Table, Td, Th, cn } from "@/components/ui/primitives";
 import { DayBars, Donut, ProgressBars, type BarRow } from "@/components/charts/charts";
 
 interface Ent {
   id: string; region_id: string; district_id: string | null; scope: "regional" | "district";
-  status: "submitted" | "revision" | "approved" | "draft"; created_at: string; submitted_at: string | null;
+  status: "submitted" | "revision" | "approved" | "draft"; created_at: string; submitted_at: string | null; updated_at: string;
   region: { name: string } | null; district: { name: string } | null;
 }
 
 const DOT: Record<Level, string> = { green: "bg-emerald-600", yellow: "bg-amber-500", red: "bg-red-600", gray: "bg-slate-400" };
 const BAR: Record<Level, string> = { green: "bg-emerald-600", yellow: "bg-amber-500", red: "bg-red-600", gray: "bg-slate-400" };
 const PILL: Record<Level, string> = { green: "bg-emerald-100 text-emerald-800", yellow: "bg-amber-100 text-amber-900", red: "bg-red-100 text-red-800", gray: "bg-slate-100 text-slate-700" };
-const LEVEL_NAME: Record<Level, string> = { green: "A’lo / reja bo‘yicha", yellow: "E’tibor kerak", red: "Kechikmoqda / xato ko‘p", gray: "Boshlamagan" };
 
 function Kpi({ icon: Icon, label, value, of, tone, href }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number; of?: number; tone: string; href?: string }) {
   const body = (
@@ -39,31 +40,18 @@ function Kpi({ icon: Icon, label, value, of, tone, href }: { icon: React.Compone
   return href ? <Link href={href}>{body}</Link> : body;
 }
 
-/** Vazirlik boshqaruv paneli: tanlangan BITTA ma’lumot yig‘ish bo‘yicha (boshqalari bilan aralashmaydi). */
-export async function MinistryDashboard({ selected }: { selected?: string }) {
+/** Tanlangan BITTA ma’lumot yig‘ishning umumiy ko‘rinishi: KPI, jarayon, tekshirish navbati (boshqa yig‘ishlar bilan aralashmaydi). */
+export async function CollectionOverview({ collectionId }: { collectionId: string }) {
   const supabase = await createClient();
-  const { data: colsRaw } = await supabase.from("collections").select("*").order("created_at", { ascending: false });
-  const cols = (colsRaw ?? []) as CollectionRow[];
-
-  if (cols.length === 0) {
-    return (
-      <>
-        <PageHeader title="Boshqaruv paneli" />
-        <Card>
-          <EmptyState title="Hali ma’lumot yig‘ish yaratilmagan" text="Birinchi ma’lumot yig‘ishni yarating — natijalar shu yerda diagramma ko‘rinishida chiqadi.">
-            <Link href="/collections/new?template=newyear" className={buttonClass("default", "default", "mt-2")}>Yangi yil shablonidan boshlash</Link>
-          </EmptyState>
-        </Card>
-      </>
-    );
-  }
-
-  const col = cols.find((c) => c.id === selected) ?? cols.find((c) => c.is_active) ?? cols[0];
+  const { data: colRaw } = await supabase.from("collections").select("*").eq("id", collectionId).maybeSingle();
+  if (!colRaw) notFound();
+  const col = colRaw as CollectionRow;
+  const base = `/collections/${col.id}`;
 
   const [{ data: entRaw }, regions, { data: distRaw }, signed] = await Promise.all([
     supabase
       .from("collection_entries")
-      .select("id, region_id, district_id, scope, status, created_at, submitted_at, region:regions(name), district:districts(name)")
+      .select("id, region_id, district_id, scope, status, created_at, submitted_at, updated_at, region:regions(name), district:districts(name)")
       .eq("collection_id", col.id)
       .order("submitted_at", { ascending: true, nullsFirst: false })
       .limit(20000),
@@ -103,14 +91,42 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
       total, sent: sentUnits, entries: mine.length, returned: mine.filter((e) => everReturned.has(e.id)).length,
       lastSubmittedAt: lastAt, startAt: col.created_at, deadline: col.deadline, now: new Date(),
     });
+    // hudud (birlik) darajasida: yuborilgan / tasdiqlangan / tekshiruvda / qaytarilgan
+    const unitStatus = new Map<string, Ent["status"][]>();
+    for (const e of mine) {
+      const k = e.scope === "regional" ? "regional" : (e.district_id ?? "");
+      unitStatus.set(k, [...(unitStatus.get(k) ?? []), e.status]);
+    }
+    const units = [...unitStatus.values()];
+    const unitsApproved = units.filter((l) => l.every((x) => x === "approved")).length;
+    const unitsRevision = units.filter((l) => l.includes("revision")).length;
+    const unitsReview = units.filter((l) => !l.includes("revision") && l.includes("submitted")).length;
+    const pdfFiles = signed.filter((f) => f.regionId === r.id);
+    const pdfAt = pdfFiles.reduce<number>((m, f) => Math.max(m, f.uploadedAt.getTime()), 0);
+    const lastChange = mine.reduce<number>((m, e) => Math.max(m, new Date(e.updated_at).getTime()), 0);
+    const pdfState: PdfState = pdfFiles.length === 0 ? "none" : lastChange > pdfAt + 60_000 ? "stale" : "fresh";
+    const kpi = kpiScore({
+      total, sent: sentUnits, approved: unitsApproved, entries: mine.length, returned: mine.filter((e) => everReturned.has(e.id)).length,
+      lastSubmittedAt: lastAt, startAt: col.created_at, deadline: col.deadline, pdf: pdfState, now: new Date(),
+    });
+    const stage = stageOf({ total, sent: sentUnits, approved: unitsApproved, revision: unitsRevision, submitted: unitsReview, pdf: pdfState });
+    const oldestWaiting = mine.filter((e) => e.status === "submitted" && e.submitted_at).reduce<string | null>((m, e) => (!m || e.submitted_at! < m ? e.submitted_at : m), null);
     return {
-      rating, lastAt,
+      rating, lastAt, kpi, stage, pdfState, total, sentUnits, unitsApproved, unitsRevision, unitsReview, oldestWaiting,
       r, sent: mine.length > 0, ownSent,
       dTotal: districtsByRegion.get(r.id) ?? 0, dSent: dIds.size, dApproved: dApproved.size,
       pending: mine.filter((e) => e.status === "submitted").length, pdf: pdfRegions.has(r.id),
     };
   });
-  const ranked = perRegion.slice().sort((a, b) => LEVEL_ORDER[a.rating.level] - LEVEL_ORDER[b.rating.level] || a.r.name.localeCompare(b.r.name));
+  const ranked = perRegion.slice().sort((a, b) => b.kpi.score - a.kpi.score || a.r.name.localeCompare(b.r.name));
+  const started = perRegion.filter((x) => x.sent);
+  const avgKpi = started.length ? Math.round(started.reduce((a, x) => a + x.kpi.score, 0) / started.length) : 0;
+  const finished = perRegion.filter((x) => x.stage.stage === "done").length;
+  const overdue = perRegion.filter((x) => x.rating.label === "Muddat o‘tdi").length;
+  const ministryTurn = perRegion.filter((x) => x.stage.owner === "ministry").length;
+  const regionTurn = perRegion.filter((x) => x.stage.owner === "region").length;
+  const oldestMs = perRegion.reduce<number | null>((m, x) => { const t = x.oldestWaiting ? new Date(x.oldestWaiting).getTime() : null; return t !== null && (m === null || t < m) ? t : m; }, null);
+  const oldestDays = oldestMs === null ? null : Math.floor((new Date().getTime() - oldestMs) / 86_400_000);
   const regionsSent = perRegion.filter((x) => x.sent).length;
   const totalDistricts = perRegion.reduce((a, x) => a + x.dTotal, 0);
   const sentDistricts = perRegion.reduce((a, x) => a + x.dSent, 0);
@@ -126,7 +142,7 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
       partial: showDistricts ? Math.max(0, x.dSent - x.dApproved) : x.pending ? 1 : 0,
       sub: showDistricts ? `${x.dSent}/${x.dTotal} tuman` : x.sent ? "yuborgan" : "yubormagan",
       extra: x.pdf ? <Badge tone="green">PDF bor</Badge> : x.sent ? <Badge tone="amber">PDF yo‘q</Badge> : <Badge tone="red">kutilmoqda</Badge>,
-      href: `/collections/${col.id}/hudud/${x.r.id}`,
+      href: `${base}/hudud/${x.r.id}`,
     };
   });
 
@@ -139,47 +155,18 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
 
   const queue = entries.filter((e) => e.status === "submitted").slice(0, 8);
   const missing = perRegion.filter((x) => !x.sent);
-  const closed = !col.is_active || (col.deadline && col.deadline < today.toISOString().slice(0, 10));
-
+  
   return (
     <>
-      <PageHeader title="Boshqaruv paneli" description="Tanlangan ma’lumot yig‘ish bo‘yicha umumiy holat. Har bir yig‘ish alohida hisoblanadi.">
-        <Link href={`/malumotlar?c=${col.id}`} className={buttonClass("default", "lg")}>
-          <Table2 className="h-5 w-5" /> Kelgan ma’lumotlar (jadval)
-        </Link>
-        <Link href={`/collections/${col.id}`} className={buttonClass("outline", "lg")}>
-          <FileText className="h-5 w-5" /> Hisobot
-        </Link>
-      </PageHeader>
-
-      {cols.length > 1 && (
-        <nav aria-label="Ma’lumot yig‘ishlar" className="mb-5 flex flex-wrap gap-2">
-          {cols.map((c) => (
-            <Link
-              key={c.id} href={`/?c=${c.id}`} aria-current={c.id === col.id ? "page" : undefined}
-              className={cn("rounded-full border px-4 py-1.5 text-sm", c.id === col.id ? "border-blue-800 bg-blue-800 font-semibold text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50")}
-            >
-              {c.title}
-            </Link>
-          ))}
-        </nav>
-      )}
-
       {col.deadline && <div className="mb-5"><DeadlineTimer deadline={col.deadline} title={`«${col.title}» — ma’lumot yig‘ish muddati`} /></div>}
-
-      <div className="mb-5 flex flex-wrap items-center gap-2 text-sm text-slate-600">
-        <b className="text-slate-900">{col.title}</b>
-        {closed ? <Badge tone="red">Yopiq</Badge> : <Badge tone="green">Faol</Badge>}
-        {col.deadline && <span>Muddat: {fmtDate(col.deadline)}</span>}
-      </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Kpi icon={MapPinned} label="Hududlar yuborgan" value={regionsSent} of={regions.length} tone="text-blue-700" />
         {showDistricts
           ? <Kpi icon={MapPinned} label="Tuman/shaharlar" value={sentDistricts} of={totalDistricts} tone="text-blue-700" />
           : <Kpi icon={MapPinned} label="Kelgan yozuvlar" value={entries.length} tone="text-blue-700" />}
-        <Kpi icon={Clock3} label="Tekshirish kutmoqda" value={waiting} tone="text-amber-600" href={`/collections/${col.id}?status=submitted`} />
-        <Kpi icon={CheckCircle2} label="Tasdiqlangan" value={approved} tone="text-emerald-600" href={`/collections/${col.id}?status=approved`} />
+        <Kpi icon={Clock3} label="Tekshirish kutmoqda" value={waiting} tone="text-amber-600" href={`${base}/hududlar?status=submitted`} />
+        <Kpi icon={CheckCircle2} label="Tasdiqlangan" value={approved} tone="text-emerald-600" href={`${base}/hududlar?status=approved`} />
         <Kpi icon={FileCheck2} label="Imzolangan PDF" value={pdfCount} of={regions.length} tone="text-violet-600" />
       </div>
 
@@ -203,40 +190,60 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
         </Card>
       </div>
 
+      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <Kpi icon={FileCheck2} label="O‘rtacha KPI (boshlaganlar)" value={avgKpi} of={100} tone="text-blue-700" />
+        <Kpi icon={CheckCircle2} label="Yakunlagan viloyatlar" value={finished} of={regions.length} tone="text-emerald-600" />
+        <Kpi icon={Clock3} label="Vazirlik tekshiruvida" value={ministryTurn} tone="text-amber-600" href={`${base}/hududlar?status=submitted`} />
+        <Kpi icon={MapPinned} label="Viloyat javobida" value={regionTurn} tone="text-violet-600" />
+        <Kpi icon={Undo2} label="Muddati o‘tgan" value={overdue} tone="text-red-600" />
+      </div>
+      {oldestDays !== null && oldestDays >= 2 && (
+        <p role="alert" className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900">
+          Eng eski tekshiruv kutayotgan yozuv {oldestDays} kundan beri turibdi — navbatni ko‘rib chiqing (pastdagi «Tekshirish navbati»).
+        </p>
+      )}
+
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Hududlar reytingi — tezlik va aniqlik</CardTitle>
-          <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
-            {(["green", "yellow", "red"] as Level[]).map((lv) => (
-              <span key={lv} className="flex items-center gap-1">
-                <i className={cn("inline-block h-2.5 w-2.5 rounded-full", DOT[lv])} />
-                {LEVEL_NAME[lv]}: <b>{ranked.filter((x) => x.rating.level === lv).length}</b>
-              </span>
-            ))}
-            <span>· Aniqlik = tuzatishga qaytarilmagan yozuvlar ulushi</span>
+          <CardTitle>Viloyatlar KPI — jarayon, tezlik va sifat</CardTitle>
+          <p className="mt-1 text-xs text-slate-600">
+            KPI ball (0–100) = qamrov 35% + o‘z vaqtida 25% + aniqlik 25% + imzolangan PDF 15%. PDF faqat hamma narsa tasdiqlangach hisoblanadi — vazirlik kechiksa, viloyat jazolanmaydi.
           </p>
         </CardHeader>
         <Table>
-          <thead><tr><Th>Hudud</Th><Th>Holat</Th><Th>Bajarilish</Th><Th>Aniqlik</Th><Th>Oxirgi yuborish</Th><Th>Imzolangan PDF</Th><Th><span className="sr-only">Ochish</span></Th></tr></thead>
+          <thead><tr><Th>№</Th><Th>Viloyat</Th><Th>Bosqich / kimda</Th><Th>Qamrov</Th><Th>Tasdiqlangan</Th><Th>Aniqlik</Th><Th>O‘z vaqtida</Th><Th>PDF</Th><Th>KPI</Th><Th><span className="sr-only">Ochish</span></Th></tr></thead>
           <tbody>
-            {ranked.map((x) => (
+            {ranked.map((x, i) => (
               <tr key={x.r.id}>
+                <Td className="text-slate-500">{i + 1}</Td>
                 <Td className="font-medium">{x.r.name}</Td>
-                <Td>
+                <Td className="min-w-44">
                   <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold", PILL[x.rating.level])} title={x.rating.detail}>
-                    <i className={cn("inline-block h-2 w-2 rounded-full", DOT[x.rating.level])} /> {x.rating.label}
+                    <i className={cn("inline-block h-2 w-2 rounded-full", DOT[x.rating.level])} /> {x.stage.label}
                   </span>
+                  <p className="mt-0.5 text-[11px] text-slate-500">
+                    {x.stage.owner === "ministry" ? "Kimda: vazirlik" : x.stage.owner === "region" ? "Kimda: viloyat" : "Yopilgan"}
+                    {x.unitsRevision > 0 && ` · ${x.unitsRevision} ta qaytarilgan`}
+                  </p>
                 </Td>
                 <Td className="min-w-32">
                   <div className="flex items-center gap-2">
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200"><div className={cn("h-full", BAR[x.rating.level])} style={{ width: `${x.rating.progress}%` }} /></div>
-                    <span className="w-9 text-right text-xs font-semibold">{x.rating.progress}%</span>
+                    <span className="w-14 text-right text-xs font-semibold">{x.sentUnits}/{x.total}</span>
                   </div>
                 </Td>
+                <Td className="whitespace-nowrap text-xs font-semibold">{x.unitsApproved}/{x.total}</Td>
                 <Td>{x.rating.accuracy === null ? <span className="text-slate-400">—</span> : <b className={x.rating.accuracy >= 90 ? "text-emerald-700" : x.rating.accuracy >= 70 ? "text-amber-700" : "text-red-700"}>{x.rating.accuracy}%</b>}</Td>
-                <Td className="whitespace-nowrap text-xs">{x.lastAt ? fmtDateTime(x.lastAt) : "—"}</Td>
-                <Td>{x.pdf ? <Link href={`/imzolangan?c=${col.id}`} className="text-xs font-semibold text-emerald-700 hover:underline">✓ Yuborilgan</Link> : <span className="text-xs text-slate-400">—</span>}</Td>
-                <Td><Link href={`/collections/${col.id}/hudud/${x.r.id}`} className={buttonClass("outline", "sm")}>Tekshirish</Link></Td>
+                <Td>{x.sent ? <b className={x.kpi.parts.timeliness >= 90 ? "text-emerald-700" : x.kpi.parts.timeliness >= 60 ? "text-amber-700" : "text-red-700"}>{Math.round(x.kpi.parts.timeliness)}%</b> : <span className="text-slate-400">—</span>}</Td>
+                <Td>
+                  {x.pdfState === "fresh" ? <Link href={`${base}/pdf`} className="text-xs font-semibold text-emerald-700 hover:underline">✓ Yuborilgan</Link>
+                    : x.pdfState === "stale" ? <Link href={`${base}/pdf`} className="text-xs font-semibold text-amber-700 hover:underline" title="PDF yuborilgandan keyin ma’lumot o‘zgargan">⚠ Eskirgan</Link>
+                    : <span className="text-xs text-slate-400">—</span>}
+                </Td>
+                <Td>
+                  <span className={cn("inline-flex min-w-14 items-center justify-center rounded-md px-2 py-1 text-sm font-bold", PILL[x.kpi.level])} title={x.kpi.grade}>{x.sent ? x.kpi.score : "—"}</span>
+                </Td>
+                <Td><Link href={`${base}/hudud/${x.r.id}`} className={buttonClass("outline", "sm")}>Tekshirish</Link></Td>
               </tr>
             ))}
           </tbody>
@@ -270,14 +277,14 @@ export async function MinistryDashboard({ selected }: { selected?: string }) {
                         <Td className="font-medium">{e.region?.name}</Td>
                         <Td>{e.district?.name ?? regionSelf(e.region?.name ?? "")}</Td>
                         <Td className="whitespace-nowrap text-xs">{fmtDateTime(e.submitted_at)}</Td>
-                        <Td><Link href={`/collections/${col.id}/hudud/${e.region_id}#e-${e.id}`} className={buttonClass("default", "sm")}>Tekshirish</Link></Td>
+                        <Td><Link href={`${base}/hudud/${e.region_id}#e-${e.id}`} className={buttonClass("default", "sm")}>Tekshirish</Link></Td>
                       </tr>
                     ))}
                   </tbody>
                 </Table>
                 {waiting > queue.length && (
                   <p className="border-t border-slate-200 px-4 py-2 text-sm">
-                    <Link href={`/collections/${col.id}?status=submitted`} className="text-blue-800 hover:underline">Yana {waiting - queue.length} ta — hammasini ko‘rish →</Link>
+                    <Link href={`${base}/hududlar?status=submitted`} className="text-blue-800 hover:underline">Yana {waiting - queue.length} ta — hammasini ko‘rish →</Link>
                   </p>
                 )}
               </>

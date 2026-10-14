@@ -8,7 +8,7 @@ import { Badge, buttonClass, Card, CardBody, CardHeader, CardTitle, EmptyState, 
 import { StatusBadge } from "@/components/ui/status-badge";
 import { fmtDate } from "@/lib/format";
 import { ROLE_LABELS } from "@/lib/constants";
-import { MinistryDashboard } from "./ministry-dashboard";
+import { CollectionsHub } from "./collections-hub";
 
 interface Stats {
   total: number; regional: number; district: number; draft: number; pending: number;
@@ -29,7 +29,12 @@ function Stat({ label, value, tone, href, hint }: { label: string; value: number
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
   const profile = await requireProfile();
   if (profile.role === "region_manager") redirect("/boshqarma");
-  if (profile.role === "super_admin" || profile.role === "observer") return <MinistryDashboard selected={(await searchParams).c} />;
+  if (profile.role === "super_admin" || profile.role === "observer") {
+    // eski havolalar (/?c=ID) — tegishli yig‘ish ish maydoniga
+    const c = (await searchParams).c;
+    if (c && /^[0-9a-f-]{36}$/i.test(c)) redirect(`/collections/${c}`);
+    return <CollectionsHub />;
+  }
   const supabase = await createClient();
 
   const [{ data: statsRaw }, recent] = await Promise.all([

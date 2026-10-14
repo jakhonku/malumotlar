@@ -4,8 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { renameMyDistrict } from "@/app/actions/districts";
+import { hideMyDistrict, renameMyDistrict } from "@/app/actions/districts";
 import { Button, Input, Select } from "@/components/ui/primitives";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface Item { id: string; name: string; type: "tuman" | "shahar" }
 
@@ -16,6 +17,7 @@ export function EditDistricts({ items }: { items: Item[] }) {
   const [name, setName] = useState("");
   const [type, setType] = useState<"tuman" | "shahar">("tuman");
   const [error, setError] = useState<string | null>(null);
+  const [hideId, setHideId] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   function open(it: Item) { setEditId(it.id); setName(it.name); setType(it.type); setError(null); }
@@ -33,6 +35,24 @@ export function EditDistricts({ items }: { items: Item[] }) {
   }
 
   return (
+    <>
+    <ConfirmDialog
+      open={!!hideId}
+      title="Ro‘yxatdan chiqarish"
+      description="Bu tuman/shahar ro‘yxatdan olib tashlanadi (unga ma’lumot kiritilmagan bo‘lsa). Faqat bunday hudud mavjud bo‘lmasa yoki xato qo‘shilgan bo‘lsa foydalaning."
+      confirmLabel="Chiqarish"
+      destructive
+      onClose={() => setHideId(null)}
+      onConfirm={async () => {
+        if (!hideId) return;
+        const res = await hideMyDistrict(hideId);
+        if (!res.ok) return res.error ?? "Xatolik yuz berdi";
+        toast.success("Ro‘yxatdan chiqarildi");
+        setHideId(null);
+        setEditId(null);
+        router.refresh();
+      }}
+    />
     <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((it) => editId === it.id ? (
         <li key={it.id} className="sm:col-span-2">
@@ -51,6 +71,7 @@ export function EditDistricts({ items }: { items: Item[] }) {
               </label>
               <Button type="submit" disabled={pending || name.trim().length < 3}>{pending ? "Saqlanmoqda…" : "Saqlash"}</Button>
               <Button type="button" variant="ghost" onClick={() => setEditId(null)}>Bekor qilish</Button>
+              <Button type="button" variant="outline" disabled={pending} onClick={() => setHideId(editId)} title="Bunday tuman/shahar mavjud emas (faqat ma’lumot kiritilmagan bo‘lsa)">Ro‘yxatdan chiqarish</Button>
             </div>
             {error && <p role="alert" className="text-sm font-medium text-red-700">{error}</p>}
           </form>
@@ -64,5 +85,6 @@ export function EditDistricts({ items }: { items: Item[] }) {
         </li>
       ))}
     </ul>
+    </>
   );
 }
