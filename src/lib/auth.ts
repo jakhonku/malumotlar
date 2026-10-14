@@ -7,9 +7,11 @@ import type { Profile } from "@/lib/types";
 
 export const getProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return null;
-  const { data } = await supabase.from("profiles").select("*").eq("id", auth.user.id).maybeSingle();
+  // getClaims — JWT ni mahalliy tekshiradi (Supabase Auth ga qo‘shimcha tarmoq so‘rovi yo‘q): har sahifada bitta so‘rov kam
+  const { data: auth } = await supabase.auth.getClaims();
+  const uid = auth?.claims?.sub;
+  if (!uid) return null;
+  const { data } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle();
   if (!data || !data.is_active) return null;
   return data as Profile;
 });

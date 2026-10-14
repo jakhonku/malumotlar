@@ -3,8 +3,9 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { KeyRound, Pencil, Plus, X } from "lucide-react";
+import { Copy, FileDown, KeyRound, Link2, Pencil, Plus, X } from "lucide-react";
 import { createUser, resetPassword, updateUser } from "@/app/actions/users";
+import { makeAllLoginLinks, makeLoginLink } from "@/app/actions/login-links";
 import { Badge, Button, Card, CardBody, CardHeader, CardTitle, Field, Input, Select, Table, Td, Th } from "@/components/ui/primitives";
 import { ROLE_LABELS, type Role } from "@/lib/constants";
 import { formatPhone } from "@/lib/phone";
@@ -32,6 +33,29 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [pending, start] = useTransition();
+  const [link, setLink] = useState<{ who: string; url: string } | null>(null);
+
+  function oneLink(u: UserRow) {
+    start(async () => {
+      const res = await makeLoginLink(u.id);
+      if (!res.ok || !res.url) return void toast.error(res.error ?? "Xatolik yuz berdi");
+      setLink({ who: regionName(u.region_id) || u.full_name, url: res.url });
+    });
+  }
+  function allLinks() {
+    if (!window.confirm("Barcha viloyat boshqarmalari uchun YANGI tezkor kirish havolalari yaratiladi (eskilari bekor qilinadi). Davom etasizmi?")) return;
+    start(async () => {
+      const res = await makeAllLoginLinks();
+      if (!res.ok || !res.docx) return void toast.error(res.error ?? "Xatolik yuz berdi");
+      const bytes = Uint8Array.from(atob(res.docx), (c) => c.charCodeAt(0));
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }));
+      a.download = "viloyat-tezkor-havolalar.docx";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast.success(`${res.count} ta havola yaratildi — Word yuklab olindi`);
+    });
+  }
 
   const regionName = (id: string | null) => regions.find((r) => r.id === id)?.name ?? "";
   const districtName = (id: string | null) => districts.find((d) => d.id === id)?.name ?? "";
@@ -156,8 +180,25 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
         </Card>
       )}
 
+      {link && (
+        <Card className="border-blue-300 bg-blue-50/60">
+          <CardBody className="space-y-2">
+            <p className="text-sm font-semibold text-slate-900">{link.who} — tezkor kirish havolasi (faqat hozir ko‘rinadi)</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <code className="min-w-0 flex-1 break-all rounded bg-white p-2 text-xs">{link.url}</code>
+              <Button size="sm" onClick={() => { void navigator.clipboard.writeText(link.url); toast.success("Nusxa olindi"); }}><Copy className="h-4 w-4" /> Nusxalash</Button>
+              <Button size="sm" variant="ghost" onClick={() => setLink(null)}>Yopish</Button>
+            </div>
+            <p className="text-xs text-slate-600">Havolaga ega har kim shu viloyat nomidan kira oladi — faqat mas’ul xodimga yuboring. Yangi havola yaratilsa, eskisi bekor bo‘ladi.</p>
+          </CardBody>
+        </Card>
+      )}
+
       <Card>
-        <div className="border-b border-slate-200 px-4 py-3 text-sm text-slate-600">Foydalanuvchilar: <b className="text-slate-900">{filtered.length}</b></div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 text-sm text-slate-600">
+          <span>Foydalanuvchilar: <b className="text-slate-900">{filtered.length}</b></span>
+          <Button size="sm" variant="outline" onClick={allLinks} disabled={pending}><FileDown className="h-4 w-4" /> Viloyatlar uchun tezkor havolalar (Word)</Button>
+        </div>
         <Table>
           <thead><tr><Th>F.I.Sh.</Th><Th>Login</Th><Th>Rol</Th><Th>Hudud</Th><Th>Telefon</Th><Th>Holati</Th><Th><span className="sr-only">Amallar</span></Th></tr></thead>
           <tbody>
@@ -185,6 +226,7 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
                       <Pencil className="h-3.5 w-3.5" /> Tahrirlash
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => reset(u)} aria-label="Parolni yangilash"><KeyRound className="h-3.5 w-3.5" /></Button>
+                    {u.role === "region_manager" && <Button size="sm" variant="ghost" onClick={() => oneLink(u)} disabled={pending} aria-label="Tezkor kirish havolasi" title="Tezkor kirish havolasi (login-parolsiz)"><Link2 className="h-3.5 w-3.5" /></Button>}
                   </div>
                 </Td>
               </tr>

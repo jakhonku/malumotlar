@@ -11,13 +11,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const supabase = await createClient();
 
   const chatEnabled = profile.role === "super_admin" || profile.role === "region_manager";
-  const [{ count: unread }, region, district, chat] = await Promise.all([
+  const [{ count: unread }, region, district, chat, avatarMap] = await Promise.all([
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("is_read", false),
     profile.region_id ? supabase.from("regions").select("name").eq("id", profile.region_id).maybeSingle() : null,
     profile.district_id ? supabase.from("districts").select("name").eq("id", profile.district_id).maybeSingle() : null,
     chatEnabled ? supabase.rpc("chat_unread_by_thread") : null,
+    avatarUrls([profile.avatar_path]),
   ]);
-  const myAvatar = profile.avatar_path ? (await avatarUrls([profile.avatar_path])).get(profile.avatar_path) ?? null : null;
+  const myAvatar = profile.avatar_path ? avatarMap.get(profile.avatar_path) ?? null : null;
   const chatUnread = ((chat?.data ?? []) as { n: number }[]).reduce((a, r) => a + r.n, 0);
 
   const scopeLabel =

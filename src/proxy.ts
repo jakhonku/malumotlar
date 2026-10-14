@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
   });
 
   const { data } = await supabase.auth.getClaims();
-  const isLogin = path === "/login";
+  const isLogin = path === "/login" || path.startsWith("/kirish/"); // /kirish/<havola> — tezkor kirish (ochiq, o‘zi tekshiradi)
   if (!data?.claims && !isLogin) {
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/login";

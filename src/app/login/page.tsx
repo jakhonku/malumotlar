@@ -7,7 +7,8 @@ import { DEPARTMENT_NAME } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ havola?: string }> }) {
+  const sp = await searchParams;
   const configured = isSupabaseConfigured();
   const profile = configured ? await getProfile() : null;
   if (profile) redirect("/");
@@ -24,6 +25,9 @@ export default async function LoginPage() {
           <p className="mt-2 text-sm font-medium text-slate-100">{DEPARTMENT_NAME}</p>
           <p className="mt-1 text-xs text-slate-300">Tadbirlar ma’lumotlarini yig‘ish va monitoring tizimi</p>
         </div>
+        {sp.havola && (
+          <p role="alert" className="mb-3 rounded-lg bg-amber-100 p-3 text-sm font-medium text-amber-900">Tezkor kirish havolasi eskirgan yoki bekor qilingan. Login va parol bilan kiring yoki vazirlikdan yangi havola so‘rang.</p>
+        )}
         <div className="rounded-xl bg-white p-6 shadow-2xl">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">Tizimga kirish</h2>
           {configured ? (

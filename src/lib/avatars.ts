@@ -23,7 +23,7 @@ export async function avatarUrls(paths: (string | null | undefined)[]): Promise<
   const out = new Map<string, string>();
   if (!list.length) return out;
   try {
-    await ensureAvatarBucket();
+    // ombor allaqachon bor (rasm yuklanganda yaratiladi) — har sahifada qo‘shimcha so‘rov yubormaymiz
     const { data } = await createAdminClient().storage.from(AVATAR_BUCKET).createSignedUrls(list, 3600);
     for (const r of data ?? []) if (r.path && r.signedUrl) out.set(r.path, r.signedUrl);
   } catch {
