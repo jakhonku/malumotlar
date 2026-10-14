@@ -10,15 +10,14 @@ import { UsersManager, type UserRow } from "@/components/events/users-manager";
 export default async function UsersPage() {
   await requireRole("super_admin");
   const supabase = await createClient();
-  const [{ data: withPhoto, error: photoErr }, regions, districts] = await Promise.all([
-    supabase.from("profiles").select("id,username,full_name,role,region_id,district_id,phone,position,avatar_path,can_edit_districts,is_active").order("full_name").limit(1000),
-    getRegions(supabase, true),
-    getDistricts(supabase, { includeInactive: true }),
-  ]);
-  // 0017 migratsiyasi hali ishga tushirilmagan bo‘lsa ham ro‘yxat ochilaversin
-  const data: Record<string, unknown>[] | null = photoErr
-    ? (await supabase.from("profiles").select("id,username,full_name,role,region_id,district_id,phone,can_edit_districts,is_active").order("full_name").limit(1000)).data
-    : withPhoto;
+  const [regions, districts] = await Promise.all([getRegions(supabase, true), getDistricts(supabase, { includeInactive: true })]);
+  // ustunlar migratsiyalar bilan qo‘shilgan (0017 rasm, 0021 oxirgi faollik): bo‘lmasa, kamroq ustun bilan ham ro‘yxat ochilaversin
+  const base = "id,username,full_name,role,region_id,district_id,phone,can_edit_districts,is_active";
+  let data: Record<string, unknown>[] | null = null;
+  for (const cols of [`${base},position,avatar_path,last_seen_at`, `${base},position,avatar_path`, base]) {
+    const r = await supabase.from("profiles").select(cols).order("full_name").limit(1000);
+    if (!r.error) { data = r.data as unknown as Record<string, unknown>[]; break; }
+  }
   const urls = await avatarUrls((data ?? []).map((u) => u.avatar_path as string | null));
   const order = new Map(regions.map((r) => [r.id, r.sort_order]));
   const roleRank: Record<string, number> = { super_admin: 0, observer: 1, region_manager: 2, district_manager: 3 };
@@ -34,7 +33,29 @@ export default async function UsersPage() {
     const expired = new Date(l.expires_at as string) < new Date();
     linkOf.set(l.user_id as string, { state: l.revoked_at ? "bekor" : expired ? "eskirgan" : "faol", until: fmtTashkent(l.expires_at as string), uses: (l.use_count as number) ?? 0 });
   }
-  const users = sorted.map((u) => ({ ...u, avatar_url: u.avatar_path ? urls.get(u.avatar_path as string) ?? null : null, link: linkOf.get(u.id as string) ?? null }));
+  // oxirgi kirish (login) vaqti — Supabase Auth dan
+  const signedIn = new Map<string, string>();
+  try {
+    const { data: au } = await createAdminClient().auth.admin.listUsers({ page: 1, perPage: 1000 });
+    for (const a of au?.users ?? []) if (a.last_sign_in_at) signedIn.set(a.id, a.last_sign_in_at);
+  } catch { /* ko‘rsatilmaydi */ }
+  const nowMs = new Date().getTime();
+  const users = sorted.map((u) => {
+    const seen = (u.last_seen_at as string | null) ?? null;
+    const ago = seen ? nowMs - new Date(seen).getTime() : null;
+    const si = signedIn.get(u.id as string) ?? null;
+    return {
+      ...u,
+      avatar_url: u.avatar_path ? urls.get(u.avatar_path as string) ?? null : null,
+      link: linkOf.get(u.id as string) ?? null,
+      presence: {
+        online: ago !== null && ago < 5 * 60_000,
+        seen: seen ? fmtTashkent(seen) : null,
+        agoMin: ago === null ? null : Math.floor(ago / 60_000),
+        signedIn: si ? fmtTashkent(si) : null,
+      },
+    };
+  });
   return (
     <>
       <PageHeader title="Foydalanuvchilar" description="Foydalanuvchilarni yarating, hududlarga biriktiring va rollarini boshqaring." />

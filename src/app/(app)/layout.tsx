@@ -2,6 +2,7 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { avatarUrls } from "@/lib/avatars";
+import { PresenceBeat } from "@/components/presence-beat";
 import { BackButton } from "@/components/layout/back-button";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen">
+      <PresenceBeat />
       <Sidebar role={profile.role} fullName={profile.full_name} scopeLabel={scopeLabel} unread={unread ?? 0} chatUnread={chatUnread} avatarUrl={myAvatar} />
       <main className="px-4 py-6 lg:ml-72 lg:px-8">
         <div className="mx-auto max-w-7xl">

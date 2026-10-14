@@ -11,6 +11,7 @@ export interface Profile {
   position?: string | null;
   avatar_path?: string | null;
   active_session_id?: string | null;
+  last_seen_at?: string | null;
   can_edit_districts: boolean;
   is_active: boolean;
 }

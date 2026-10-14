@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Copy, FileDown, KeyRound, Link2, Pencil, Plus, X } from "lucide-react";
@@ -14,7 +14,8 @@ interface Opt { id: string; name: string }
 interface Dist extends Opt { region_id: string }
 export interface UserRow {
   id: string; username: string; full_name: string; role: Role; region_id: string | null;
-  district_id: string | null; phone: string | null; position?: string | null; avatar_url?: string | null; link?: { state: "faol" | "eskirgan" | "bekor"; until: string; uses: number } | null; can_edit_districts: boolean; is_active: boolean;
+  district_id: string | null; phone: string | null; position?: string | null; avatar_url?: string | null; link?: { state: "faol" | "eskirgan" | "bekor"; until: string; uses: number } | null;
+  presence?: { online: boolean; seen: string | null; agoMin: number | null; signedIn: string | null }; can_edit_districts: boolean; is_active: boolean;
 }
 
 interface FormState {
@@ -27,12 +28,27 @@ const blank: FormState = {
   phone: "", can_edit_districts: false, is_active: true, new_district_name: "", new_district_type: "tuman",
 };
 
+/** «5 daqiqa oldin», «2 soat oldin», «3 kun oldin» */
+function ago(min: number | null | undefined): string {
+  if (min === null || min === undefined) return "";
+  if (min < 1) return "hozirgina";
+  if (min < 60) return `${min} daqiqa oldin`;
+  if (min < 1440) return `${Math.floor(min / 60)} soat oldin`;
+  return `${Math.floor(min / 1440)} kun oldin`;
+}
+
 export function UsersManager({ users, regions, districts }: { users: UserRow[]; regions: Opt[]; districts: Dist[] }) {
   const router = useRouter();
   const [form, setForm] = useState<FormState | null>(null);
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [pending, start] = useTransition();
+  const online = users.filter((u) => u.presence?.online).length;
+  // online holati yangilanib turishi uchun sahifa har daqiqada o‘zini yangilaydi
+  useEffect(() => {
+    const id = setInterval(() => { if (document.visibilityState === "visible") router.refresh(); }, 60_000);
+    return () => clearInterval(id);
+  }, [router]);
   const [link, setLink] = useState<{ who: string; url: string; until: string } | null>(null);
 
   function oneLink(u: UserRow) {
@@ -196,11 +212,11 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
 
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 text-sm text-slate-600">
-          <span>Foydalanuvchilar: <b className="text-slate-900">{filtered.length}</b></span>
+          <span>Foydalanuvchilar: <b className="text-slate-900">{filtered.length}</b> · <span className="font-semibold text-emerald-700">hozir online: {online}</span></span>
           <Button size="sm" variant="outline" onClick={allLinks} disabled={pending}><FileDown className="h-4 w-4" /> Viloyatlar uchun tezkor havolalar (Word)</Button>
         </div>
         <Table>
-          <thead><tr><Th>F.I.Sh.</Th><Th>Login</Th><Th>Rol</Th><Th>Hudud</Th><Th>Telefon</Th><Th>Tezkor havola</Th><Th>Holati</Th><Th><span className="sr-only">Amallar</span></Th></tr></thead>
+          <thead><tr><Th>F.I.Sh.</Th><Th>Login</Th><Th>Rol</Th><Th>Hudud</Th><Th>Faollik</Th><Th>Telefon</Th><Th>Tezkor havola</Th><Th>Holati</Th><Th><span className="sr-only">Amallar</span></Th></tr></thead>
           <tbody>
             {filtered.map((u) => (
               <tr key={u.id} className="hover:bg-slate-50">
@@ -218,6 +234,13 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
                 <Td>{u.username}</Td>
                 <Td>{ROLE_LABELS[u.role]}{u.can_edit_districts && <div className="text-xs text-slate-500">tuman tahriri: ruxsat</div>}</Td>
                 <Td>{[regionName(u.region_id), districtName(u.district_id)].filter(Boolean).join(" · ") || "—"}</Td>
+                <Td className="whitespace-nowrap text-xs">
+                  {u.presence?.online
+                    ? <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700"><i className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" /> Online</span>
+                    : <span className="inline-flex items-center gap-1.5 text-slate-500"><i className="inline-block h-2.5 w-2.5 rounded-full bg-slate-300" /> Offline</span>}
+                  {!u.presence?.online && u.presence?.seen && <span className="block text-slate-500">{ago(u.presence.agoMin)} · {u.presence.seen}</span>}
+                  {u.presence?.signedIn ? <span className="block text-slate-400">oxirgi kirish: {u.presence.signedIn}</span> : <span className="block text-slate-300">hali kirmagan</span>}
+                </Td>
                 <Td className="whitespace-nowrap">{formatPhone(u.phone)}</Td>
                 <Td className="whitespace-nowrap text-xs">
                   {u.role !== "region_manager" ? <span className="text-slate-300">—</span> : !u.link ? <span className="text-slate-400">yaratilmagan</span> : u.link.state === "faol"
