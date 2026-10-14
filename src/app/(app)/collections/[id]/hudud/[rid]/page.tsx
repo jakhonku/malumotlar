@@ -55,7 +55,7 @@ export default async function RegionReviewPage({ params }: { params: Promise<{ i
   return (
     <>
       <PageHeader title={regionOrgName(region.name)} description={`${col.title} — yuborilgan ma’lumotlar jadvali`}>
-        <Link href={`/malumotlar?c=${col.id}`} className={buttonClass("outline")}>Barcha hududlar</Link>
+        <Link href={`/collections/${col.id}/hududlar`} className={buttonClass("outline")}>Barcha hududlar</Link>
         {admin && <ApproveRegion collectionId={col.id} regionId={rid} count={waiting} />}
       </PageHeader>
 
@@ -68,7 +68,7 @@ export default async function RegionReviewPage({ params }: { params: Promise<{ i
       <div className={cn("mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm", last ? "border-emerald-300 bg-emerald-50" : "border-red-300 bg-red-50")}>
         {last ? (
           <>
-            <p><b className="text-emerald-900">Imzolangan hujjat yuborilgan.</b> Yuborgan: {sender} · {fmtDateTime(last.uploadedAt.toISOString())}</p>
+            <p><b className="text-emerald-900">Imzolangan hujjat yuborilgan.</b> Yuborgan: {region.name} · {sender} · {fmtDateTime(last.uploadedAt.toISOString())}</p>
             <div className="flex flex-wrap gap-2">
               <a href={last.url} target="_blank" rel="noreferrer" className={buttonClass("success", "sm")}>PDF ni ochish</a>
               {admin && <ReturnSigned collectionId={col.id} regionId={rid} regionName={region.name} />}

@@ -53,7 +53,7 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
       const last = lastOf.get(p.id);
       return {
         t: {
-          key: p.id, name: nameOf(p), sub: p.role === "region_manager" ? "Madaniyat boshqarmasi" : p.full_name,
+          key: p.id, name: nameOf(p), sub: p.role === "region_manager" ? `Madaniyat boshqarmasi · ${p.full_name}` : p.full_name,
           preview: short(last, profile.id), time: last ? listTime(last.created_at) : "", unread: unread.get(p.id) ?? 0,
         } satisfies ThreadItem,
         at: last ? new Date(last.created_at).getTime() : 0,

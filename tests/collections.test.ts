@@ -212,12 +212,13 @@ describe("hisobotlar (Word / Excel)", () => {
     expect(xml).toContain("Ma’lumot kiritilmagan");
   });
 
-  it("Word ‘alohida jadvallar’: viloyat va tuman o‘z jadvalida, hudud ustunlarisiz", async () => {
+  it("Word ‘viloyat bo‘yicha’: har bir viloyat BITTA jadvalda — avval viloyatning o‘zi, ostida tumanlari", async () => {
     const { default: JSZip } = await import("jszip");
     const buf = await buildCollectionDocx(col, entries, regions, districts, { ...opts, layout: "grouped" });
     const xml = await (await JSZip.loadAsync(buf)).file("word/document.xml")!.async("string");
-    expect((xml.match(/<w:tbl>/g) ?? []).length).toBe(2); // viloyat jadvali + Urgut jadvali
-    for (const t of ["SAMARQAND VILOYAT MADANIYAT BOSHQARMASI", "Viloyatning o‘z ma’lumotlari", "Tuman va shaharlar", "Urgut tumani"]) expect(xml).toContain(t);
+    expect((xml.match(/<w:tbl>/g) ?? []).length).toBe(1); // viloyat + uning tumani — bitta jadval
+    for (const t of ["SAMARQAND VILOYAT MADANIYAT BOSHQARMASI", "Viloyatning o‘zi", "Urgut tumani", "Tuman/shahar"]) expect(xml).toContain(t);
+    expect(xml.indexOf("Viloyatning o‘zi")).toBeLessThan(xml.indexOf("Urgut tumani")); // viloyatning o‘zi birinchi
     expect(xml).not.toContain("Viloyat/hudud");
   });
 

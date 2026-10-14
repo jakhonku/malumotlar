@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  Bell, ClipboardCheck, FileCheck2, MessageSquare, ClipboardList, FileText, History, LayoutDashboard, ListChecks, LogOut, Map, Menu,
+  Bell, ClipboardCheck, FileCheck2, MessageSquare, UserCircle2, ClipboardList, FileText, History, LayoutDashboard, ListChecks, LogOut, Map, Menu,
   Mic2, PlusCircle, Settings, Users, UserSquare2, X, Building2, MapPinned,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
@@ -40,8 +40,8 @@ const NAV: NavItem[] = [
 ];
 
 export function Sidebar({
-  role, fullName, scopeLabel, unread, chatUnread = 0,
-}: { role: Role; fullName: string; scopeLabel: string; unread: number; chatUnread?: number }) {
+  role, fullName, scopeLabel, unread, chatUnread = 0, avatarUrl = null,
+}: { role: Role; fullName: string; scopeLabel: string; unread: number; chatUnread?: number; avatarUrl?: string | null }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const items = NAV.filter((n) => n.roles.includes(role));
@@ -84,9 +84,20 @@ export function Sidebar({
 
   const footer = (
     <div className="border-t border-white/10 p-4">
-      <p className="truncate text-sm font-semibold text-white">{fullName}</p>
-      <p className="truncate text-xs text-slate-400">{ROLE_LABELS[role]}</p>
-      <p className="mb-3 truncate text-xs text-slate-400">{scopeLabel}</p>
+      <Link href="/profil" onClick={() => setOpen(false)} className="mb-3 flex items-center gap-3 rounded-md p-1 hover:bg-white/10" aria-label="Mening profilim">
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt="" className="h-14 w-11 shrink-0 rounded object-cover ring-1 ring-white/30" />
+        ) : (
+          <span className="flex h-14 w-11 shrink-0 items-center justify-center rounded bg-white/10 text-slate-300"><UserCircle2 className="h-6 w-6" /></span>
+        )}
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-semibold text-white">{fullName}</span>
+          <span className="block truncate text-xs text-slate-400">{ROLE_LABELS[role]}</span>
+          <span className="block truncate text-xs text-slate-400">{scopeLabel}</span>
+          <span className="block text-[11px] text-blue-300">Profilim →</span>
+        </span>
+      </Link>
       {(role === "super_admin" || role === "region_manager") && <PushToggle className="mb-2" />}
       <div className="flex gap-2">
         <Link href="/notifications" className="relative flex flex-1 items-center justify-center gap-1 rounded-md bg-white/10 px-2 py-2 text-xs text-white hover:bg-white/20">

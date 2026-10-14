@@ -5,6 +5,7 @@ import { subDays, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { getRegions } from "@/lib/queries";
 import { listSignedFiles } from "@/lib/signed-files";
+import { avatarUrls } from "@/lib/avatars";
 import type { CollectionRow } from "@/lib/collections";
 import { fmtDateTime } from "@/lib/format";
 import { regionSelf } from "@/lib/brand";
@@ -60,6 +61,14 @@ export async function CollectionOverview({ collectionId }: { collectionId: strin
     listSignedFiles(col.id).catch(() => []),
   ]);
   const entries = ((entRaw ?? []) as unknown as Ent[]).filter((e) => e.status !== "draft");
+  // viloyat boshqarma boshliqlari (F.I.Sh. va 3x4 rasm — profilidan)
+  const { data: mgrRaw } = await supabase.from("profiles").select("full_name,position,avatar_path,region_id").eq("role", "region_manager").eq("is_active", true);
+  const mgrUrls = await avatarUrls((mgrRaw ?? []).map((m) => m.avatar_path as string | null));
+  const mgrOf = new Map<string, { name: string; position: string | null; url: string | null }>();
+  for (const m of mgrRaw ?? []) {
+    if (!m.region_id || mgrOf.has(m.region_id as string)) continue;
+    mgrOf.set(m.region_id as string, { name: m.full_name as string, position: (m.position as string | null) ?? null, url: m.avatar_path ? mgrUrls.get(m.avatar_path as string) ?? null : null });
+  }
   const me = await getProfile();
   let everReturned = new Set<string>(entries.filter((e) => e.status === "revision").map((e) => e.id));
   if (me?.role === "super_admin" && entries.length) {
@@ -216,7 +225,20 @@ export async function CollectionOverview({ collectionId }: { collectionId: strin
             {ranked.map((x, i) => (
               <tr key={x.r.id}>
                 <Td className="text-slate-500">{i + 1}</Td>
-                <Td className="font-medium">{x.r.name}</Td>
+                <Td className="font-medium">
+                  <div className="flex items-center gap-3">
+                    {mgrOf.get(x.r.id)?.url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={mgrOf.get(x.r.id)!.url!} alt="" className="h-12 w-9 shrink-0 rounded object-cover ring-1 ring-slate-300" />
+                    ) : (
+                      <span className="flex h-12 w-9 shrink-0 items-center justify-center rounded bg-slate-100 text-xs text-slate-400">—</span>
+                    )}
+                    <span>
+                      {x.r.name}
+                      {mgrOf.get(x.r.id) && <span className="block text-xs font-normal text-slate-500">{mgrOf.get(x.r.id)!.name}{mgrOf.get(x.r.id)!.position ? ` · ${mgrOf.get(x.r.id)!.position}` : ""}</span>}
+                    </span>
+                  </div>
+                </Td>
                 <Td className="min-w-44">
                   <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold", PILL[x.rating.level])} title={x.rating.detail}>
                     <i className={cn("inline-block h-2 w-2 rounded-full", DOT[x.rating.level])} /> {x.stage.label}

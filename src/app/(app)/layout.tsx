@@ -1,6 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
+import { avatarUrls } from "@/lib/avatars";
 import { BackButton } from "@/components/layout/back-button";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     profile.district_id ? supabase.from("districts").select("name").eq("id", profile.district_id).maybeSingle() : null,
     chatEnabled ? supabase.rpc("chat_unread_by_thread") : null,
   ]);
+  const myAvatar = profile.avatar_path ? (await avatarUrls([profile.avatar_path])).get(profile.avatar_path) ?? null : null;
   const chatUnread = ((chat?.data ?? []) as { n: number }[]).reduce((a, r) => a + r.n, 0);
 
   const scopeLabel =
@@ -25,7 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen">
-      <Sidebar role={profile.role} fullName={profile.full_name} scopeLabel={scopeLabel} unread={unread ?? 0} chatUnread={chatUnread} />
+      <Sidebar role={profile.role} fullName={profile.full_name} scopeLabel={scopeLabel} unread={unread ?? 0} chatUnread={chatUnread} avatarUrl={myAvatar} />
       <main className="px-4 py-6 lg:ml-72 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <BackButton />

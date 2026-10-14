@@ -5,14 +5,14 @@ import { PAGE_SIZE } from "@/lib/constants";
 import { fmtDateTime } from "@/lib/format";
 import { buttonClass, Card, EmptyState, PageHeader, Table, Td, Th } from "@/components/ui/primitives";
 
-interface Row { id: number; action: string; entity_type: string; entity_id: string | null; details: Record<string, unknown>; created_at: string; user: { full_name: string; username: string } | null }
+interface Row { id: number; action: string; entity_type: string; entity_id: string | null; details: Record<string, unknown>; created_at: string; user: { full_name: string; username: string; region: { name: string } | null } | null }
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ page?: string; action?: string }> }) {
   await requireRole("super_admin");
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
   const supabase = await createClient();
-  let q = supabase.from("audit_logs").select("id,action,entity_type,entity_id,details,created_at,user:profiles!user_id(full_name,username)", { count: "exact" });
+  let q = supabase.from("audit_logs").select("id,action,entity_type,entity_id,details,created_at,user:profiles!user_id(full_name,username,region:regions(name))", { count: "exact" });
   if (sp.action) q = q.ilike("action", `${sp.action.replace(/[%,()*\\]/g, "")}%`);
   const { data, count } = await q.order("id", { ascending: false }).range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
   const rows = (data ?? []) as unknown as Row[];
@@ -34,7 +34,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
               {rows.map((r) => (
                 <tr key={r.id}>
                   <Td className="whitespace-nowrap">{fmtDateTime(r.created_at)}</Td>
-                  <Td>{r.user?.full_name ?? "—"}<div className="text-xs text-slate-500">{r.user?.username}</div></Td>
+                  <Td>{r.user?.region?.name && <div className="text-xs font-semibold text-blue-800">{r.user.region.name}</div>}{r.user?.full_name ?? "—"}<div className="text-xs text-slate-500">{r.user?.username}</div></Td>
                   <Td className="font-mono text-xs">{r.action}</Td>
                   <Td>{r.entity_type === "event" && r.entity_id ? <Link href={`/events/${r.entity_id}`} className="text-blue-900 hover:underline">tadbir</Link> : r.entity_type}</Td>
                   <Td className="max-w-md break-words font-mono text-xs text-slate-600">{JSON.stringify(r.details)}</Td>

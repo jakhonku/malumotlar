@@ -13,7 +13,7 @@ interface Opt { id: string; name: string }
 interface Dist extends Opt { region_id: string }
 export interface UserRow {
   id: string; username: string; full_name: string; role: Role; region_id: string | null;
-  district_id: string | null; phone: string | null; can_edit_districts: boolean; is_active: boolean;
+  district_id: string | null; phone: string | null; position?: string | null; avatar_url?: string | null; can_edit_districts: boolean; is_active: boolean;
 }
 
 interface FormState {
@@ -163,7 +163,17 @@ export function UsersManager({ users, regions, districts }: { users: UserRow[]; 
           <tbody>
             {filtered.map((u) => (
               <tr key={u.id} className="hover:bg-slate-50">
-                <Td className="font-medium">{u.full_name}</Td>
+                <Td className="font-medium">
+                  <div className="flex items-center gap-3">
+                    {u.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={u.avatar_url} alt="" className="h-12 w-9 shrink-0 rounded object-cover ring-1 ring-slate-300" />
+                    ) : (
+                      <span className="flex h-12 w-9 shrink-0 items-center justify-center rounded bg-slate-100 text-slate-400">—</span>
+                    )}
+                    <span>{u.full_name}{u.position && <span className="block text-xs font-normal text-slate-500">{u.position}</span>}{regionName(u.region_id) && <span className="mt-0.5 inline-block rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-800">{regionName(u.region_id)}</span>}</span>
+                  </div>
+                </Td>
                 <Td>{u.username}</Td>
                 <Td>{ROLE_LABELS[u.role]}{u.can_edit_districts && <div className="text-xs text-slate-500">tuman tahriri: ruxsat</div>}</Td>
                 <Td>{[regionName(u.region_id), districtName(u.district_id)].filter(Boolean).join(" · ") || "—"}</Td>

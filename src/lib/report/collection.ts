@@ -20,7 +20,7 @@ export interface CollectionReportOptions {
   emptyMode: "hide" | "mark";
   generatedOn: string; // dd.MM.yyyy
   showStatus: boolean;
-  /** single — hammasi bitta jadvalda; grouped — har bir viloyat va tuman alohida jadvalda */
+  /** single — barcha viloyatlar bitta jadvalda; grouped — har bir viloyat o‘z jadvalida (avval viloyatning o‘zi, ostida tumanlari) */
   layout?: "single" | "grouped";
 }
 
@@ -88,11 +88,15 @@ const fieldValues = (col: CollectionRow, e: EntryRow | null) =>
   e ? col.fields.map((f) => displayValue(f, e.answers[f.key])) : col.fields.map((_, i) => (i === 0 ? EMPTY_TEXT : ""));
 
 /** Jadval tuzilmasi: ustunlar kengligi barcha qatorlar mazmunidan bir marta hisoblanadi (hamma jadvalda bir xil). */
-function makeGrid(col: CollectionRow, withGeo: boolean, all: { region: string; district: string; entry: EntryRow | null }[], showStatus: boolean) {
-  const headers = ["№", ...(withGeo ? ["Viloyat/hudud", "Tuman/shahar"] : []), ...col.fields.map((f) => f.label), ...(showStatus ? ["Holati"] : [])];
+type Geo = boolean | "district";
+
+function makeGrid(col: CollectionRow, geo: Geo, all: { region: string; district: string; entry: EntryRow | null }[], showStatus: boolean) {
+  const geoHeaders = geo === "district" ? ["Tuman/shahar"] : geo ? ["Viloyat/hudud", "Tuman/shahar"] : [];
+  const geoCells = (r: { region: string; district: string }) => (geo === "district" ? [r.district] : geo ? [r.region, r.district] : []);
+  const headers = ["№", ...geoHeaders, ...col.fields.map((f) => f.label), ...(showStatus ? ["Holati"] : [])];
   const body = all.map((r) => [
     "",
-    ...(withGeo ? [r.region, r.district] : []),
+    ...geoCells(r),
     ...fieldValues(col, r.entry),
     ...(showStatus ? [r.entry ? STATUS_LABELS[r.entry.status] : ""] : []),
   ]);
@@ -107,7 +111,7 @@ function makeGrid(col: CollectionRow, withGeo: boolean, all: { region: string; d
         headers, widths, size,
         rows: rows.map((r, i) => [
           String(i + 1),
-          ...(withGeo ? [r.region, r.district] : []),
+          ...geoCells(r),
           ...fieldValues(col, r.entry),
           ...(showStatus ? [r.entry ? STATUS_LABELS[r.entry.status] : ""] : []),
         ]),
@@ -132,38 +136,36 @@ export async function buildCollectionDocx(
   ];
 
   if (opts.layout === "grouped") {
-    const grid = makeGrid(col, false, entries.map((e) => ({ region: "", district: "", entry: e })), opts.showStatus);
-    const tbl = (list: EntryRow[]) => grid.render(list.map((e) => ({ region: "", district: "", entry: e })));
-    let rendered = 0;
+    // har bir viloyat — bitta jadval: birinchi qator(lar) viloyatning o‘zi, ostida tuman/shaharlar
+    const perRegion: { region: Region; rows: TableRowData[] }[] = [];
     for (const region of regions.slice().sort((x, y) => x.sort_order - y.sort_order)) {
       const inRegion = entries.filter((e) => e.region_id === region.id);
       if (!inRegion.length && opts.emptyMode === "hide") continue;
-      rendered++;
-      children.push(para(regionOrgName(region.name).toUpperCase(), { bold: true, size: 28, align: AlignmentType.CENTER, before: 240, after: 120, keepNext: true }));
-
+      const own = regionKind(region.name) === "respublika" ? "Respublikaning o‘zi" : regionKind(region.name) === "shahar" ? "Shaharning o‘zi" : "Viloyatning o‘zi";
+      const rows: TableRowData[] = [];
       if (col.audience !== "district") {
-        const own = inRegion.filter((e) => e.scope === "regional").sort(byCreated);
-        if (own.length || opts.emptyMode === "mark") {
-          children.push(para(regionKind(region.name) === "respublika" ? "Respublikaning o‘z ma’lumotlari" : regionKind(region.name) === "shahar" ? "Shaharning o‘z ma’lumotlari" : "Viloyatning o‘z ma’lumotlari", { bold: true, size: 26, before: 120, after: 80, keepNext: true }));
-          children.push(own.length ? tbl(own) : para(EMPTY_TEXT, { italics: true, size: 24, after: 80 }));
-        }
+        const mine = inRegion.filter((e) => e.scope === "regional").sort(byCreated);
+        for (const e of mine) rows.push({ region: region.name, district: own, entry: e });
+        if (!mine.length && opts.emptyMode === "mark") rows.push({ region: region.name, district: own, entry: null });
       }
       if (col.audience !== "regional") {
         const dEntries = inRegion.filter((e) => e.scope === "district");
-        const regionDistricts = districts.filter((d) => d.region_id === region.id);
-        const list = opts.emptyMode === "mark" ? regionDistricts : regionDistricts.filter((d) => dEntries.some((e) => e.district_id === d.id));
-        if (list.length) {
-          children.push(para("Tuman va shaharlar", { bold: true, size: 26, before: 200, after: 80, keepNext: true }));
-          for (const d of list) {
-            const de = dEntries.filter((e) => e.district_id === d.id).sort(byCreated);
-            children.push(para(d.name, { bold: true, size: 24, before: 120, after: 60, keepNext: true }));
-            children.push(de.length ? tbl(de) : para(EMPTY_TEXT, { italics: true, size: 24, after: 60 }));
-          }
+        for (const d of districts.filter((x) => x.region_id === region.id)) {
+          const de = dEntries.filter((e) => e.district_id === d.id).sort(byCreated);
+          for (const e of de) rows.push({ region: region.name, district: d.name, entry: e });
+          if (!de.length && opts.emptyMode === "mark") rows.push({ region: region.name, district: d.name, entry: null });
         }
       }
+      if (rows.length) perRegion.push({ region, rows });
     }
-    if (rendered === 0) {
+    if (perRegion.length === 0) {
       children.push(para("Tanlangan shartlar bo‘yicha ma’lumot topilmadi.", { size: 26, align: AlignmentType.CENTER, before: 400 }));
+    } else {
+      const grid = makeGrid(col, "district", perRegion.flatMap((x) => x.rows), opts.showStatus);
+      for (const { region, rows } of perRegion) {
+        children.push(para(regionOrgName(region.name).toUpperCase(), { bold: true, size: 28, align: AlignmentType.CENTER, before: 240, after: 120, keepNext: true }));
+        children.push(grid.render(rows));
+      }
     }
   } else {
     const rows: TableRowData[] = [];

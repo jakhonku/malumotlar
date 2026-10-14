@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 // Asosiy (menyudagi) sahifalarda «Orqaga» kerak emas
-const TOP = new Set(["/", "/boshqarma", "/collections", "/malumotlar", "/chat", "/users", "/audit", "/settings", "/notifications", "/events", "/reports", "/approvals", "/monitoring", "/artists", "/responsibles"]);
+const TOP = new Set(["/", "/boshqarma", "/collections", "/malumotlar", "/chat", "/users", "/audit", "/settings", "/profil", "/notifications", "/events", "/reports", "/approvals", "/monitoring", "/artists", "/responsibles"]);
 
 /** Sahifaning «ota» manzili (tarix bo‘lmasa, shu yerga qaytariladi). */
 export function parentPath(path: string): string {

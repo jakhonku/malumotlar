@@ -114,6 +114,13 @@ export default async function RegionPanel() {
         </div>
       </header>
 
+      {!profile.avatar_path && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-slate-800">
+          <p>Profilingizni to‘ldiring: <b>F.I.Sh.</b> va <b>3x4 rasm</b> (majburiy emas) — vazirlik sizni tanib turadi.</p>
+          <Link href="/profil" className={buttonClass("default", "sm")}>Profilni to‘ldirish</Link>
+        </div>
+      )}
+
       {cards.filter(({ c }) => c.deadline).map(({ c }) => (
         <DeadlineTimer key={c.id} deadline={c.deadline!} title={`«${c.title}» — ma’lumot kiritish muddati`} />
       ))}

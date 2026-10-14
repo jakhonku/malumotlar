@@ -8,6 +8,8 @@ export interface Profile {
   region_id: string | null;
   district_id: string | null;
   phone: string | null;
+  position?: string | null;
+  avatar_path?: string | null;
   can_edit_districts: boolean;
   is_active: boolean;
 }

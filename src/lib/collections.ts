@@ -356,7 +356,7 @@ export function newYearTemplate(): CollectionInput {
           { key: "soni", label: "Soni", type: "number" },
         ],
       }),
-      f("Mas’ul ijrochi F.I.Sh.", "text", true),
+      f("Mas’ul ijrochi F.I.Sh.", "text", true, { help: HELP_RESPONSIBLE }),
       f("Mas’ul ijrochi lavozimi", "text", true),
       f("Mas’ul ijrochi telefoni", "phone", true),
     ],
@@ -401,11 +401,14 @@ export function eventTemplate(): CollectionInput {
       f("Boshlanish sanasi", "date", true),
       f("Tugash sanasi", "date", true, { notBefore: "boshlanish_sanasi" }),
       f("Ishtirokchilar soni", "number", false),
-      f("Mas’ul ijrochi F.I.Sh.", "text", true),
+      f("Mas’ul ijrochi F.I.Sh.", "text", true, { help: HELP_RESPONSIBLE }),
       f("Mas’ul ijrochi telefoni", "phone", true),
     ],
   };
 }
+
+/** Mas’ul ijrochi — ma’lumotni tayyorlagan/javob beradigan istalgan xodim (viloyat boshqarmasi boshlig‘i bo‘lishi shart emas). */
+const HELP_RESPONSIBLE = "Istalgan mas’ul xodimning F.I.Sh. — viloyat boshqarmasi boshlig‘i bo‘lishi shart emas";
 
 /** «Statistika (sonlar)» shabloni — hududdagi muassasalar yoki ko‘rsatkichlar sonini yig‘ish uchun. */
 export function statsTemplate(): CollectionInput {
@@ -417,7 +420,7 @@ export function statsTemplate(): CollectionInput {
       f("Kutubxonalar soni", "number", true),
       f("Teatr va muzeylar soni", "number", true),
       f("Izoh", "textarea", false),
-      f("Mas’ul ijrochi F.I.Sh.", "text", true),
+      f("Mas’ul ijrochi F.I.Sh.", "text", true, { help: HELP_RESPONSIBLE }),
       f("Mas’ul ijrochi telefoni", "phone", true),
     ],
   };

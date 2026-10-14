@@ -9,7 +9,7 @@ import { STATUS_LABELS, type EventStatus } from "@/lib/constants";
 export function ExportBar({ collectionId, regionId }: { collectionId: string; regionId?: string }) {
   const [statuses, setStatuses] = useState<EventStatus[]>(["approved"]);
   const [empty, setEmpty] = useState<"hide" | "mark">("hide");
-  const [layout, setLayout] = useState<"single" | "grouped">("single");
+  const [layout, setLayout] = useState<"single" | "grouped">("grouped");
   const [busy, setBusy] = useState<string | null>(null);
 
   const toggle = (s: EventStatus) => setStatuses((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
@@ -62,8 +62,8 @@ export function ExportBar({ collectionId, regionId }: { collectionId: string; re
         </div>
         <fieldset className="space-y-1 text-sm">
           <legend className="mb-1 font-medium text-slate-700">Jadval ko‘rinishi</legend>
-          <label className="flex cursor-pointer items-center gap-2"><input type="radio" name="layout" checked={layout === "single"} onChange={() => setLayout("single")} className="h-4 w-4 accent-blue-800" /> Umumiy jadval — barcha viloyat va tumanlar bitta jadvalda</label>
-          <label className="flex cursor-pointer items-center gap-2"><input type="radio" name="layout" checked={layout === "grouped"} onChange={() => setLayout("grouped")} className="h-4 w-4 accent-blue-800" /> Alohida jadvallar — har bir viloyat va tuman o‘z jadvalida</label>
+          <label className="flex cursor-pointer items-center gap-2"><input type="radio" name="layout" checked={layout === "single"} onChange={() => setLayout("single")} className="h-4 w-4 accent-blue-800" /> Umumiy jadval — barcha viloyatlar bitta jadvalda (viloyat va tuman ustunlari bilan)</label>
+          <label className="flex cursor-pointer items-center gap-2"><input type="radio" name="layout" checked={layout === "grouped"} onChange={() => setLayout("grouped")} className="h-4 w-4 accent-blue-800" /> Viloyat bo‘yicha — har bir viloyat bitta jadvalda: avval viloyatning o‘zi, ostida tumanlari</label>
         </fieldset>
         <div className="flex flex-wrap gap-2">
           <Button variant="success" size="lg" onClick={() => download("docx")} disabled={!!busy}>
