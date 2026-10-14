@@ -104,10 +104,14 @@ export default async function SignedPdfPage() {
                     </li>
                   </ol>
 
+                  {ready.missing.length >= ready.total ? (
+                    <p className="rounded-md bg-slate-50 p-3 text-sm text-slate-600">Word/Excel hujjat ma’lumot kiritilgandan keyin shu yerda paydo bo‘ladi. <Link href="/boshqarma" className="text-blue-800 underline">Ma’lumot kiritish</Link></p>
+                  ) : (
                   <div className="flex flex-wrap gap-2">
                     <a href={`/kiritish/export?c=${c.id}&t=${token}&format=docx`} className={buttonClass("success")}><FileDown className="h-4 w-4" /> Word yuklab olish</a>
                     <a href={`/kiritish/export?c=${c.id}&t=${token}&format=xlsx`} className={buttonClass("outline")}><FileSpreadsheet className="h-4 w-4" /> Excel yuklab olish</a>
                   </div>
+                  )}
 
                   <div className="border-t border-slate-200 pt-4">
                     {ready.ready ? (

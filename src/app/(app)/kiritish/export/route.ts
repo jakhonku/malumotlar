@@ -20,12 +20,16 @@ export async function GET(req: NextRequest) {
   const cid = sp.get("c") ?? "";
   const token = sp.get("t") ?? "";
   const format = sp.get("format") === "xlsx" ? "xlsx" : "docx";
-  if (!UUID_RE.test(cid)) return NextResponse.json({ error: "Noto‘g‘ri so‘rov" }, { status: 400 });
+  // brauzerdan bosilgan yuklab olish: xato bo‘lsa JSON emas, tegishli sahifaga qaytariladi
+  const back = (path: string) => NextResponse.redirect(new URL(path, req.url));
+  if (!UUID_RE.test(cid)) return back("/boshqarma");
   const me = await getManager();
-  if (!me || token !== deriveToken(cid, me.region_id)) return NextResponse.json({ error: "Ruxsat yo‘q. Tizimga kiring." }, { status: 403 });
+  if (!me) return back("/login");
+  if (token !== deriveToken(cid, me.region_id)) return back("/boshqarma");
   const col = await getCollection(cid);
   const group = col ? await getEntryGroup(cid, token) : null;
-  if (!col || !group) return NextResponse.json({ error: "Havola noto‘g‘ri" }, { status: 404 });
+  // hali ma’lumot kiritilmagan bo‘lsa, yuklab olinadigan hujjat yo‘q
+  if (!col || !group) return back("/boshqarma");
 
   const admin = createAdminClient();
   const [{ data: reg }, { data: ds }] = await Promise.all([
