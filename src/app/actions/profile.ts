@@ -47,3 +47,16 @@ export async function saveMyProfile(fd: FormData): Promise<Result> {
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+/** Profil rasmini darhol o‘chiradi (saqlash tugmasini bosish shart emas). */
+export async function removeMyPhoto(): Promise<Result> {
+  const me = await getProfile();
+  if (!me) return { ok: false, error: "Tizimga kiring" };
+  const admin = createAdminClient();
+  if (me.avatar_path) await admin.storage.from(AVATAR_BUCKET).remove([me.avatar_path]);
+  const { error } = await admin.from("profiles").update({ avatar_path: null }).eq("id", me.id);
+  if (error) return { ok: false, error: "Rasmni o‘chirib bo‘lmadi. Qayta urinib ko‘ring." };
+  await admin.from("audit_logs").insert({ user_id: me.id, action: "profile.photo.remove", entity_type: "user", entity_id: me.id, details: {} });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

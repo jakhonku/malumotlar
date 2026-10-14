@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
-import { saveMyProfile } from "@/app/actions/profile";
+import { removeMyPhoto, saveMyProfile } from "@/app/actions/profile";
 import { Button, Input } from "@/components/ui/primitives";
 
 const W = 600;
@@ -35,7 +35,7 @@ export function ProfileForm({ initial }: { initial: { full_name: string; positio
   const [phone, setPhone] = useState(initial.phone);
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<string | null>(initial.avatarUrl);
-  const [remove, setRemove] = useState(false);
+  const [hasSaved, setHasSaved] = useState(initial.hasPhoto);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -46,7 +46,6 @@ export function ProfileForm({ initial }: { initial: { full_name: string; positio
     try {
       const blob = await toPortraitJpeg(f);
       setPhoto(blob);
-      setRemove(false);
       setPreview(URL.createObjectURL(blob));
     } catch {
       toast.error("Rasmni o‘qib bo‘lmadi. Boshqa rasm tanlang.");
@@ -60,12 +59,12 @@ export function ProfileForm({ initial }: { initial: { full_name: string; positio
     fd.set("position", position);
     fd.set("phone", phone);
     if (photo) fd.set("photo", new File([photo], "profil.jpg", { type: "image/jpeg" }));
-    if (remove) fd.set("remove_photo", "1");
     start(async () => {
       const res = await saveMyProfile(fd);
       if (!res.ok) return setError(res.error ?? "Xatolik");
       setError(null);
       setPhoto(null);
+      if (photo) setHasSaved(true);
       toast.success("Profil saqlandi");
       router.refresh();
     });
@@ -75,7 +74,7 @@ export function ProfileForm({ initial }: { initial: { full_name: string; positio
     <form onSubmit={save} className="grid gap-6 md:grid-cols-[15rem_1fr]">
       <div>
         <div className="relative mx-auto aspect-[3/4] w-48 overflow-hidden rounded-lg border-2 border-slate-300 bg-slate-100 md:w-full">
-          {preview && !remove ? (
+          {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={preview} alt="Profil rasmi (3x4)" className="h-full w-full object-cover" />
           ) : (
@@ -84,9 +83,22 @@ export function ProfileForm({ initial }: { initial: { full_name: string; positio
         </div>
         <input ref={input} type="file" accept="image/*" onChange={pick} className="hidden" aria-label="3x4 rasm tanlash" />
         <div className="mt-3 flex flex-wrap justify-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => input.current?.click()}><Camera className="h-4 w-4" /> {preview && !remove ? "Rasmni almashtirish" : "3x4 rasm yuklash"}</Button>
-          {(initial.hasPhoto || photo) && !remove && (
-            <Button type="button" variant="ghost" size="sm" onClick={() => { setRemove(true); setPhoto(null); setPreview(null); if (input.current) input.current.value = ""; }}><Trash2 className="h-4 w-4" /> Olib tashlash</Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => input.current?.click()}><Camera className="h-4 w-4" /> {preview ? "Rasmni almashtirish" : "3x4 rasm yuklash"}</Button>
+          {photo && (
+            <Button type="button" variant="ghost" size="sm" onClick={() => { setPhoto(null); setPreview(hasSaved ? initial.avatarUrl : null); if (input.current) input.current.value = ""; }}>Bekor qilish</Button>
+          )}
+          {hasSaved && !photo && (
+            <Button
+              type="button" variant="destructive" size="sm" disabled={pending}
+              onClick={() => start(async () => {
+                const res = await removeMyPhoto();
+                if (!res.ok) return void toast.error(res.error ?? "Xatolik");
+                setHasSaved(false); setPreview(null); setPhoto(null);
+                if (input.current) input.current.value = "";
+                toast.success("Rasm o‘chirildi");
+                router.refresh();
+              })}
+            ><Trash2 className="h-4 w-4" /> Rasmni o‘chirish</Button>
           )}
         </div>
         <p className="mt-2 text-center text-xs text-slate-500">Rasm avtomatik 3x4 nisbatda qirqiladi. Majburiy emas.</p>
