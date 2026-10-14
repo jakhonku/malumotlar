@@ -26,13 +26,14 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
   const { data, error } = await supabase.auth.signInWithPassword({ email, password: parsed.data.password });
   if (error || !data.user) return { error: "Login yoki parol noto‘g‘ri" };
 
-  const { data: profile } = await supabase.from("profiles").select("is_active").eq("id", data.user.id).maybeSingle();
+  const { data: profile } = await supabase.from("profiles").select("is_active,role").eq("id", data.user.id).maybeSingle();
   if (!profile || !profile.is_active) {
     await supabase.auth.signOut();
     return { error: "Hisobingiz faol emas. Vazirlik administratori bilan bog‘laning." };
   }
   if (data.session) await takeOverSession(data.user.id, data.session.access_token);
-  redirect("/");
+  // to‘g‘ridan-to‘g‘ri o‘z sahifasiga (bosh sahifa orqali qo‘shimcha yo‘naltirish yo‘q — bitta tarmoq aylanishi kam)
+  redirect(profile.role === "region_manager" ? "/boshqarma" : "/");
 }
 
 export async function signOut() {
